@@ -1,0 +1,99 @@
+# Kodi Media Center language file
+# Addon Name: Zappn TV
+# Addon id: plugin.video.zappntv
+# Addon Provider: fayer3
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Kodi Translation Team\n"
+"Language-Team: English (http://www.transifex.com/projects/p/xbmc-addons/language/en/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#This is a comment
+
+msgctxt "#32000"
+msgid "nothing in here"
+msgstr "hier ist nichts"
+
+msgctxt "#32001"
+msgid "Debug"
+msgstr ""
+
+msgctxt "#32003"
+msgid "page"
+msgstr "Seite"
+
+msgctxt "#32004"
+msgid "Add to Favorites"
+msgstr "zu Favoriten hinzufügen"
+
+msgctxt "#32005"
+msgid "Remove from Favorites"
+msgstr "aus Favoriten entfernen"
+
+msgctxt "#32006"
+msgid "Favorites"
+msgstr "Favoriten"
+
+msgctxt "#32007"
+msgid "alternative format for DRM content (720p with widevine)"
+msgstr "alternatives Format für DRM Inhalt (720p mit Widevine)"
+
+msgctxt "#32008"
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgctxt "#32009"
+msgid "limit some categories to 20 items per page"
+msgstr "Limitiere einige Kategorien auf 20 Items pro Seite"
+
+msgctxt "#32010"
+msgid "Search"
+msgstr "Suchen"
+
+msgctxt "#32011"
+msgid "Search for TV Show"
+msgstr "Suchen nach Fernsehsendung"
+
+msgctxt "#32012"
+msgid "Sorting of the Items:"
+msgstr "Sortierung der Einträge"
+
+msgctxt "#32013"
+msgid "ordered by release (like in the App)"
+msgstr "Nach Erscheinungsdatum (wie in der App)"
+
+msgctxt "#32014"
+msgid "orderes by Name"
+msgstr "Nach Name"
+
+msgctxt "#32015"
+msgid "SUCCESS"
+msgstr "ERFOLG"
+
+msgctxt "#32016"
+msgid "ADDED '%s' TO FAVORITES"
+msgstr "'%s' ZU DEN FAVORITEN HINZUGEFÜGT"
+
+msgctxt "#32017"
+msgid "REMOVED '%s' FROM FAVORITES"
+msgstr "'%s' AUS DEN FAVORITEN ENTFERNT"
+
+msgctxt "#32018"
+msgid "DRM System to use"
+msgstr "DRM System"
+
+msgctxt "#32019"
+msgid "WIDEVINE"
+msgstr ""
+
+msgctxt "#32020"
+msgid "PLAYREADY (Android only)"
+msgstr "PLAYREADY (nur Android)"

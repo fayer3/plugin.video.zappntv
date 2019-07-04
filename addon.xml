@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.0.0" provider-name="fayer3">
+    <requires>
+        <import addon="xbmc.python" version="2.25.0"/>
+        <import addon="script.module.routing" version="0.2.0"/>
+        <import addon="script.module.inputstreamhelper" version="0.2.2" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="de_DE">ZAPPN TV Levestream und Mediathek</summary>
+        <description lang="de_DE">Livestream von den Österreichischen Sendern ORF 1, ORF 2, Puls 4, Puls 24, ATV, ATV2, ProSieben, Sat.1, Kabel 1, Sixx, Prosieben Maxx, Sat.1 GOLD und Kabel 1 Doku sowie Mediathek von Puls 4, ATV, Kabel 1, Sat.1, Sixx, Prosieben, Prosieben Maxx, Sat.1 Gold und Kabel 1 Doku.</description>
+        <disclaimer lang="de_DE">Die von diesem Addon dargestellten Inhalte werden von den Erstellern des Addons weder gehostet oder verbreitet, noch stehen die Ersteller in irgendeiner Beziehung zu den Anbietern des Inhalts.</disclaimer>
+        <summary lang="en_GB">PZAPPN TV Levestream and Mediathek</summary>
+        <description lang="en_GB">Livestream of the Austrian channels ORF 1, ORF 2, Puls 4, Puls 24, ATV, ATV2, ProSieben, Sat.1, Kabel 1, Sixx, Prosieben Maxx, Sat.1 GOLD and Kabel 1 Doku and the mediatek of Puls 4, ATV, Kabel 1, Sat.1, Sixx, Prosieben, Prosieben Maxx, Sat.1 Gold and Kabel 1 Doku.</description>
+        <disclaimer lang="en_GB">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content providers.</disclaimer>
+        <language></language>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum></forum>
+        <website>https://zappn.tv/</website>
+        <email>fb4472 (at) aon.at</email>
+        <source></source>
+        <news></news>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart>resources/fanart.png</fanart>
+        </assets>
+    </extension>
+</addon>
