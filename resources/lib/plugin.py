@@ -35,6 +35,9 @@ except ImportError:
     from urllib import quote, unquote
     from urllib2 import Request, urlopen, HTTPError
 
+import locale
+import time
+from datetime import datetime, timedelta
 import hashlib
 import json
 import gzip
@@ -45,13 +48,15 @@ logger = logging.getLogger(ADDON.getAddonInfo('id'))
 kodilogging.config()
 plugin = routing.Plugin()
 
-__profile__ = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
+__profile__ = xbmc.translatePath(ADDON.getAddonInfo('profile'))
 
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)
 
 favorites_file_path = __profile__+"favorites.json"
 favorites = {}
+
+icon_path = ADDON.getAddonInfo('path')+"/resources/logos/{0}.png"
 
 setContent(plugin.handle, '')
 
@@ -100,19 +105,19 @@ def index():
     else:
         kodiutils.notification("ERROR getting URL", "using saved values")
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_category, "livestream"), ListItem("Live", iconImage=live_icon), True)
+        show_category, "livestream"), ListItem("Live", iconImage=live_icon, thumbnailImage=live_icon), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        get_by_collection, collection_id=highlights_id, page="1", recursive="True"), ListItem("Highlights", iconImage=highlights_icon), True)
+        get_by_collection, collection_id=highlights_id, page="1", recursive="True"), ListItem("Highlights", iconImage=highlights_icon, thumbnailImage=highlights_icon), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_mediathek, mediathek_id), ListItem("Mediathek", iconImage=mediathek_icon), True)
+        show_mediathek, mediathek_id), ListItem("Mediathek", iconImage=mediathek_icon, thumbnailImage=mediathek_icon), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_category, "tvprogramm"), ListItem("TV Programm", iconImage=tv_programm_icon), True)
+        show_category, "tvprogramm"), ListItem("TV Programm", iconImage=tv_programm_icon, thumbnailImage=tv_programm_icon), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_search), ListItem(kodiutils.get_string(32010), iconImage=search_icon), True)
+        show_search), ListItem(kodiutils.get_string(32001), iconImage=search_icon, thumbnailImage=search_icon), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_category, "favorites"), ListItem(kodiutils.get_string(32006)), True)
+        show_category, "favorites"), ListItem(kodiutils.get_string(32002)), True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        open_settings), ListItem(kodiutils.get_string(32008), iconImage=settings_icon))
+        open_settings), ListItem(kodiutils.get_string(32003), iconImage=settings_icon, thumbnailImage=settings_icon))
     endOfDirectory(plugin.handle)
 
 @plugin.route('/settings')
@@ -192,20 +197,34 @@ def show_category(category_id):
         else:
             id = "_ch"
             name = " CH"
+        listitem = get_listitem(name="Kabel eins"+name)
+        listitem.setArt({'icon': icon_path.format("kabeleins"), 'thumb': icon_path.format("kabeleins")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "kabeleins"+id), listitem=get_listitem(name="Kabel eins"+name))
+            play_livestream, "kabeleins"+id), listitem=listitem)
+        listitem = get_listitem(name="Kabel1Doku"+name)
+        listitem.setArt({'icon': icon_path.format("kabeleinsdoku"), 'thumb': icon_path.format("kabeleinsdoku")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "kabeleinsdoku"+id), listitem=get_listitem(name="Kabel1Doku"+name))
+            play_livestream, "kabeleinsdoku"+id), listitem=listitem)
+        listitem = get_listitem(name="ProSieben"+name)
+        listitem.setArt({'icon': icon_path.format("prosieben"), 'thumb': icon_path.format("prosieben")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "prosieben"+id), listitem=get_listitem(name="ProSieben"+name))
+            play_livestream, "prosieben"+id), listitem=listitem)
+        listitem = get_listitem(name="ProSiebenMaxx"+name)
+        listitem.setArt({'icon': icon_path.format("prosiebenmaxx"), 'thumb': icon_path.format("prosiebenmaxx")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "prosiebenmaxx"+id), listitem=get_listitem(name="ProSiebenMaxx"+name))
+            play_livestream, "prosiebenmaxx"+id), listitem=listitem)
+        listitem = get_listitem(name="SAT.1"+name)
+        listitem.setArt({'icon': icon_path.format("sat1"), 'thumb': icon_path.format("sat1")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sat1"+id), listitem=get_listitem(name="SAT.1"+name))
+            play_livestream, "sat1"+id), listitem=listitem)
+        listitem = get_listitem(name="SAT.1 Gold"+name)
+        listitem.setArt({'icon': icon_path.format("sat1gold"), 'thumb': icon_path.format("sat1gold")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sat1gold"+id), listitem=get_listitem(name="SAT.1 Gold"+name))
+            play_livestream, "sat1gold"+id), listitem=listitem)
+        listitem = get_listitem(name="Sixx"+name)
+        listitem.setArt({'icon': icon_path.format("sixx"), 'thumb': icon_path.format("sixx")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sixx"+id), listitem=get_listitem(name="Sixx"+name))
+            play_livestream, "sixx"+id), listitem=listitem)
 
     elif category_id == "favorites":
         xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
@@ -216,24 +235,22 @@ def show_category(category_id):
             favorites_file.close()
 
         for item in favorites:
-            listitem = ListItem(favorites[item]["name"], iconImage=favorites[item]["icon"])
-            listitem.setArt({'fanart' : favorites[item]["fanart"]})
+            listitem = ListItem(favorites[item]["name"])
+            listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
     else:
-        addDirectoryItem(plugin.handle, "", ListItem(kodiutils.get_string(32000)), False)
+        addDirectoryItem(plugin.handle, "", ListItem(kodiutils.get_string(32004)), False)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/category/mediathek/id=<mediathek_id>')
 def show_mediathek(mediathek_id):
-    sort()
     get_by_collection(mediathek_id, "1")
     endOfDirectory(plugin.handle)
 
 @plugin.route('/search')
 def show_search():
-    sort()
-    query = xbmcgui.Dialog().input(kodiutils.get_string(32010))
+    query = xbmcgui.Dialog().input(kodiutils.get_string(32001))
     if query != "":
         search_id = ids.search_id
         channels = json.loads(get_url(ids.categories_request_url % search_id, critical=True))
@@ -255,8 +272,8 @@ def show_search():
                     icon = images["image_base"]
                 if "image_show_big" in images:
                     fanart = images["image_show_big"]
-            listitem = ListItem(result[show]["name"]+" | "+result[show]["top_level_category"]["name"], iconImage=icon)
-            listitem.setArt({"fanart" : fanart})
+            listitem = ListItem(result[show]["name"]+" | "+result[show]["top_level_category"]["name"])
+            listitem.setArt({'icon': icon, 'thumb': icon, 'fanart' : fanart})
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, result[show]["id"]),
                 listitem=listitem, isFolder=True)
     endOfDirectory(plugin.handle)
@@ -408,51 +425,86 @@ def play_video(video_id, channel):
             playitem.setProperty('inputstream.adaptive.license_key', source_url_request["drm"]["licenseAcquisitionUrl"] + "?token=" + source_url_request["drm"]["token"] +"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" +'|R{SSM}|')
     setResolvedUrl(plugin.handle, True, playitem)
 
-@plugin.route('/category/by_category/<category_id>')
+@plugin.route('/category/by_category/<category_id>/')
 def get_by_category(category_id):
-    sort()
     dir = get_url(ids.categories_request_url % category_id, critical=True)
     dir_json = json.loads(dir)
+    special = ['ganze folgen', 'clips', 'bonus']
     if "children" in dir_json["category"]:
+        setContent(plugin.handle, 'tvshows')
+        icon = ""
+        fanart = ""
+        if "images_json" in dir_json["category"]:
+            images_parent = json.loads(dir_json["category"]["images_json"])
+            if "image_base" in images_parent and images_parent["image_base"] != None:
+                icon = images_parent["image_base"]
+            if "image_show_big" in images_parent and images_parent["image_show_big"] != None:
+                fanart = images_parent["image_show_big"]
         for child in dir_json["category"]["children"]:
-            icon = ""
-            fanart = ""
-            if "images_json" in child:
-                images = json.loads(child["images_json"])
-                if "image_base" in images:
-                    icon = images["image_base"]
-                if "image_show_big" in images:
-                    fanart = images["image_show_big"]
-            listitem = ListItem(child["name"], iconImage=icon)
-            listitem.setArt({"fanart" : fanart})
+            name = child["name"]
+            icon_child = icon
+            fanart_child = fanart
+            if not any(x in child["name"].lower() for x in special):
+                icon_child = ""
+                fanart_child = ""
+                if "images_json" in child:
+                    images_child = json.loads(child["images_json"])
+                    if "image_base" in images:
+                        icon_child = images["image_base"]
+                    if "image_show_big" in images:
+                        fanart_child = images["image_show_big"]
+            listitem = ListItem(name)
+            listitem.setArt({'icon': icon_child, 'thumb': icon_child, 'fanart': fanart_child})
+            plot = ""
+            if 'description' in child and child['description'] != None:
+                try:
+                    startDATES = datetime(*(time.strptime(child['description'].split(', ')[1], '%d.%m.%y')[0:6])) # Do, 04.07.19
+                    locale.setlocale(locale.LC_ALL, '')
+                    lastTIMES = startDATES.strftime('%A - %d.%m.%Y')
+                    plot = kodiutils.get_string(32006).format(str(lastTIMES))
+                except: pass
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, child["id"]),
                 listitem=listitem, isFolder=True)
-        images = json.loads(dir_json["category"]["images_json"])
-        icon = ""
-        if "image_base" in images:
-            icon = images["image_base"]
-        fanart = ""
-        if "image_show_big" in images:
-            fanart = images["image_show_big"]
         add_favorites_folder(plugin.url_for(get_by_category, dir_json["category"]["id"]),
-            dir_json["category"]["name"],
-            icon,
-            fanart)
+            dir_json["category"]["name"], icon, fanart)
     if "vod_items" in dir_json["category"]:
-        setContent(plugin.handle, 'videos')
+        if kodiutils.get_setting("sort") == "1":
+            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_UNSORTED)
+            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_DURATION)
+        setContent(plugin.handle, 'tvshows')
         for vod in dir_json["category"]["vod_items"]:
+            goDATE = None
+            startTIMES = ""
+            Note_1 = ""
+            Note_2 = vod["summary"]
+            if 'order_date' in vod and not str(vod['order_date']).startswith('1970') and vod['order_date'] != None:
+                try:
+                    startDATES = datetime(*(time.strptime(vod['order_date'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
+                    LOCALstart = utc_to_local(startDATES)
+                    startTIMES = LOCALstart.strftime('%d.%m.%Y - %H:%M')
+                    goDATE =  LOCALstart.strftime('%d.%m.%Y')
+                except: pass
+            if startTIMES != "": Note_1 = kodiutils.get_string(32005).format(str(startTIMES))
+            if goDATE and kodiutils.get_setting("sort") == "1": xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
+
             images = json.loads(vod["images_json"])
-            listitem = ListItem(vod["title"], iconImage=images["image_base"])
+            listitem = ListItem(vod["title"])
+            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"]})
             listitem.setProperty('IsPlayable', 'true')
-            listitem.setInfo("video", {'mediatype':'video', "plot":vod["summary"], "tvshowtitle" : vod["show_name"], "duration": vod["duration"]})
+            listitem.setInfo(type='Video', infoLabels={'Title': vod['title'], 'Plot': Note_1+Note_2, 'TvShowTitle': vod['show_name'], 'Duration': vod['duration'], 'Date': goDATE, 'mediatype': 'video'})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
             addDirectoryItem(plugin.handle, url=plugin.url_for(play_video, vod["external_id"], vod["top_level_category"]["name"]),
                 listitem=listitem)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/category/by_collection/<collection_id>&page=<page>')
+def utc_to_local(dt):
+    if time.localtime().tm_isdst: return dt - timedelta(seconds=time.altzone)
+    else: return dt - timedelta(seconds=time.timezone)
+
+@plugin.route('/category/by_collection/<collection_id>/page=<page>/')
 def get_by_collection(collection_id, page):
-    sort()
     recursive = False
     if 'recursive' in plugin.args:
         recursive = plugin.args['recursive'][0] == "True"
@@ -464,15 +516,26 @@ def add_directories(id, page = "1", recursive=False, prefix=""):
     dir = get_url(ids.collections_request_url % (id, page), critical=True)
     dir_json = json.loads(dir)
     for item in dir_json["results"]:
+        setContent(plugin.handle, 'tvshows')
         images = json.loads(item["images_json"])
         if item["type"] == "Category":
             name = item["name"]
             if "top_level_category" in item:
                 if item["top_level_category"]["name"].lower() == item["name"].lower():
                     name = item["promotion_name"]
-            listitem = ListItem(name, iconImage=images["image_base"])
+            listitem = ListItem(name)
+            listitem.setArt({'icon': images["image_base"],'thumb': images["image_base"]})
             if "image_show_big" in images:
-                listitem.setArt({ "fanart" : images["image_show_big"]})
+                listitem.setArt({"fanart" : images["image_show_big"]})
+            plot = ""
+            if 'description' in item and item['description'] != None:
+                try:
+                    startDATES = datetime(*(time.strptime(item['description'].split(', ')[1], '%d.%m.%y')[0:6])) # Do, 04.07.19
+                    locale.setlocale(locale.LC_ALL, '')
+                    lastTIMES = startDATES.strftime('%A - %d.%m.%Y')
+                    plot = kodiutils.get_string(32006).format(str(lastTIMES))
+                except: pass
+            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, item["id"]),
                 listitem=listitem, isFolder=True)
         elif item["type"] == "Collection":
@@ -485,11 +548,11 @@ def add_directories(id, page = "1", recursive=False, prefix=""):
                 if "image_base" in images:
                     icon = images["image_base"]
                 addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_collection, item["id"], "1"),
-                    listitem=ListItem(prefix+item["title"], iconImage=icon), isFolder=True)
+                    listitem=ListItem(prefix+item["title"], iconImage=icon, thumbnailImage=icon), isFolder=True)
     if int(dir_json["pagination"]["page"]) * int(dir_json["pagination"]["items_per_page"]) < int(dir_json["pagination"]["total_items"]):
         if kodiutils.get_setting_as_bool("limitlist"):
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_collection, id, str(int(page)+1)),
-                listitem=ListItem(kodiutils.get_string(32003)+" "+str(int(page)+1)), isFolder=True)
+                listitem=ListItem(kodiutils.get_string(32007).format(str(int(page)+1))), isFolder=True)
         else:
             get_by_collection(id, str(int(page)+1))
 
@@ -503,11 +566,11 @@ def add_favorites_folder(path, name, icon, fanart):
     if not favorites or path not in favorites:
         # add favorites folder
         #addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, query="%s***%s###%s###%s" % (path, name, icon, fanart)), listitem=ListItem(kodiutils.get_string(32004)))
-        addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, path=quote(codecs.encode(path, 'UTF-8')), name=quote(codecs.encode(name, 'UTF-8')), icon=quote(codecs.encode(icon, 'UTF-8')), fanart=quote(codecs.encode(fanart, 'UTF-8'))), listitem=ListItem(kodiutils.get_string(32004)))
+        addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, path=quote(codecs.encode(path, 'UTF-8')), name=quote(codecs.encode(name, 'UTF-8')), icon=quote(codecs.encode(icon, 'UTF-8')), fanart=quote(codecs.encode(fanart, 'UTF-8'))), listitem=ListItem(kodiutils.get_string(32008)))
     else:
         # remove favorites
         addDirectoryItem(plugin.handle, url=plugin.url_for(remove_favorite, query=quote(codecs.encode(path, 'UTF-8'))),
-            listitem=ListItem(kodiutils.get_string(32005)))
+            listitem=ListItem(kodiutils.get_string(32009)))
 
 @plugin.route('/add_fav/')
 def add_favorite():
@@ -535,9 +598,9 @@ def add_favorite():
     favorites_file.close()
 
     try:
-        kodiutils.notification(kodiutils.get_string(32015), kodiutils.get_string(32016) % codecs.decode(name, 'utf-8'))
+        kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(codecs.decode(name, 'utf-8')))
     except TypeError:
-        kodiutils.notification(kodiutils.get_string(32015), kodiutils.get_string(32016) % codecs.decode(bytes(name, 'utf-8'), 'utf-8'))
+        kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(codecs.decode(bytes(name, 'utf-8'), 'utf-8')))
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
@@ -558,7 +621,7 @@ def remove_favorite():
     json.dump(favorites, favorites_file, indent=2)
     favorites_file.close()
 
-    kodiutils.notification(kodiutils.get_string(32015), kodiutils.get_string(32017) % name)
+    kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32012).format(name))
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
@@ -623,23 +686,23 @@ def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
         images = json.loads(channel["images_json"])
         if images:
             if "image_base" in images and images["image_base"]:
-                listitem.setArt({"icon":images["image_base"]})
+                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"]})
             else:
-                listitem.setArt({"icon":images["icon_1"]})
+                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"]})
         if "next_program" in channel:
             #'Title': channel["name"]
-            listitem.setInfo(type='Video', infoLabels={'mediatype':'video', 'plot': channel["next_program"]["name"]+'\n'+channel["next_program"]["description"]})
+            listitem.setInfo(type='Video', infoLabels={'Title': channel["name"], 'Plot': channel["next_program"]["name"]+'[CR]'+channel["next_program"]["description"], 'mediatype': 'video'})
             program_images = json.loads(channel["next_program"]["images_json"])
             if program_images:
-                listitem.setArt({"fanart" : program_images["image_base"]})
+                listitem.setArt({'fanart' : program_images["image_base"]})
     else:
         listitem = ListItem(name)
         listitem.setProperty('IsPlayable', 'true')
-        listitem.setInfo(type='Video', infoLabels={'mediatype':'video'})
+        listitem.setInfo(type='Video', infoLabels={'mediatype': 'video'})
         if icon != "":
-            listitem.setArt({"icon":icon})
+            listitem.setArt({'icon':icon, 'thumb':icon})
         if fanart != "":
-            listitem.setArt({"fanart":fanart})
+            listitem.setArt({'fanart':fanart})
     return listitem
 
 def get_channel(json_data, channel):
@@ -648,13 +711,6 @@ def get_channel(json_data, channel):
             if channels["ui_tag"] == channel:
                 return channels
     return {}
-
-def sort():
-    sort = kodiutils.get_setting("sort")
-    if sort == "0":
-        return
-    elif sort == "1":
-        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
 
 def run():
     plugin.run()

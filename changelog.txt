@@ -2,3 +2,14 @@ v0.0.1
 - Initial version
 v1.0.0
 - First Release
+v1.0.1
+- Added features from realvito:
+  - Directories (Folder+Not Folder) changed setcontent to 'tvshows' (allows for more different views in Skins)
+  - add fanart for episodes (because the thumb is large enough)
+  - fixed thumb and fanart for 'Clips', 'Bonus' and 'Ganze Folgen'
+  - Mediathek: added date to plot of each Show
+  - Mediathek: added date to plot of each Episode
+  - use sort methods only when showing Episodes and allow for choice between Default, Name, Duration, Date
+  - adapted translation for changes
+- fixed Kodi Favorites: Folders and Videos added now have a thumbnail and are now selectable
+- added Icons for livestreams from germany and switzerland

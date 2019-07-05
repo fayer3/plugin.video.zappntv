@@ -18,82 +18,90 @@ msgstr ""
 
 #This is a comment
 
-msgctxt "#32000"
-msgid "nothing in here"
-msgstr ""
-
 msgctxt "#32001"
-msgid "Debug"
-msgstr ""
-
-msgctxt "#32003"
-msgid "page"
-msgstr ""
-
-msgctxt "#32004"
-msgid "Add to Favorites"
-msgstr ""
-
-msgctxt "#32005"
-msgid "Remove from Favorites"
-msgstr ""
-
-msgctxt "#32006"
-msgid "Favorites"
-msgstr ""
-
-msgctxt "#32007"
-msgid "alternative format for DRM content (720p with widevine)"
-msgstr ""
-
-msgctxt "#32008"
-msgid "Settings"
-msgstr ""
-
-msgctxt "#32009"
-msgid "limit some categories to 20 items per page"
-msgstr ""
-
-msgctxt "#32010"
 msgid "Search"
 msgstr ""
 
+msgctxt "#32002"
+msgid "Favorites"
+msgstr ""
+
+msgctxt "#32003"
+msgid "Settings"
+msgstr ""
+
+msgctxt "#32004"
+msgid "nothing in here"
+msgstr ""
+
+msgctxt "#32005"
+msgid "From [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr ""
+
+msgctxt "#32006"
+msgid "Last Entry: [COLOR deepskyblue]{0:s}[/COLOR]"
+msgstr ""
+
+msgctxt "#32007"
+msgid "Page {0:s}"
+msgstr ""
+
+msgctxt "#32008"
+msgid "Add to Favorites"
+msgstr ""
+
+msgctxt "#32009"
+msgid "Remove from Favorites"
+msgstr ""
+
+msgctxt "#32010"
+msgid "SUCCESSFULL :"
+msgstr ""
+
 msgctxt "#32011"
-msgid "Search for TV Show"
+msgid "[COLOR green]ADDED[/COLOR] * [COLOR blue]{0:s}[/COLOR] * [COLOR green]TO FAVORITES ![/COLOR]"
 msgstr ""
 
 msgctxt "#32012"
-msgid "Sorting of the Items:"
+msgid "[COLOR red]REMOVED[/COLOR] * [COLOR blue]{0:s}[/COLOR] * [COLOR red]FROM FAVORITES ![/COLOR]"
 msgstr ""
 
 msgctxt "#32013"
-msgid "ordered by release (like in the App)"
+msgid "Search for TV Show"
 msgstr ""
 
-msgctxt "#32014"
-msgid "orderes by Name"
+msgctxt "#32101"
+msgid "Debug"
 msgstr ""
 
-msgctxt "#32015"
-msgid "SUCCESS"
-msgstr ""
-
-msgctxt "#32016"
-msgid "ADDED '%s' TO FAVORITES"
-msgstr ""
-
-msgctxt "#32017"
-msgid "REMOVED '%s' FROM FAVORITES"
-msgstr ""
-
-msgctxt "#32018"
+msgctxt "#32102"
 msgid "DRM System to use"
 msgstr ""
 
-msgctxt "#32019"
+msgctxt "#32103"
 msgid "WIDEVINE"
 msgstr ""
 
-msgctxt "#32020"
+msgctxt "#32104"
 msgid "PLAYREADY (Android only)"
+msgstr ""
+
+msgctxt "#32105"
+msgid "alternative format for DRM content (720p with widevine)"
+msgstr ""
+
+msgctxt "#32106"
+msgid "limit some categories to 20 items per page"
+msgstr ""
+
+msgctxt "#32107"
+msgid "Sorting of Episodes"
+msgstr ""
+
+msgctxt "#32108"
+msgid "ordered by release (like in the App)"
+msgstr ""
+
+msgctxt "#32109"
+msgid "Other methods to choose from"
 msgstr ""

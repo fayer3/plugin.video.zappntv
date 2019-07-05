@@ -14,7 +14,7 @@ ADDON = xbmcaddon.Addon()
 logger = logging.getLogger(__name__)
 
 
-def notification(header, message, time=5000, icon=ADDON.getAddonInfo('icon'), sound=True):
+def notification(header, message, time=8000, icon=ADDON.getAddonInfo('icon'), sound=True):
     xbmcgui.Dialog().notification(header, message, icon, time, sound)
 
 

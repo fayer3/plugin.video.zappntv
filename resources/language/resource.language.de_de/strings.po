@@ -18,82 +18,90 @@ msgstr ""
 
 #This is a comment
 
-msgctxt "#32000"
-msgid "nothing in here"
-msgstr "hier ist nichts"
-
 msgctxt "#32001"
-msgid "Debug"
-msgstr ""
-
-msgctxt "#32003"
-msgid "page"
-msgstr "Seite"
-
-msgctxt "#32004"
-msgid "Add to Favorites"
-msgstr "zu Favoriten hinzufügen"
-
-msgctxt "#32005"
-msgid "Remove from Favorites"
-msgstr "aus Favoriten entfernen"
-
-msgctxt "#32006"
-msgid "Favorites"
-msgstr "Favoriten"
-
-msgctxt "#32007"
-msgid "alternative format for DRM content (720p with widevine)"
-msgstr "alternatives Format für DRM Inhalt (720p mit Widevine)"
-
-msgctxt "#32008"
-msgid "Settings"
-msgstr "Einstellungen"
-
-msgctxt "#32009"
-msgid "limit some categories to 20 items per page"
-msgstr "Limitiere einige Kategorien auf 20 Items pro Seite"
-
-msgctxt "#32010"
 msgid "Search"
 msgstr "Suchen"
 
+msgctxt "#32002"
+msgid "Favorites"
+msgstr "Favoriten"
+
+msgctxt "#32003"
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgctxt "#32004"
+msgid "nothing in here"
+msgstr "hier ist nichts"
+
+msgctxt "#32005"
+msgid "From [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgstr "Vom [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+
+msgctxt "#32006"
+msgid "Last Entry: [COLOR deepskyblue]{0:s}[/COLOR]"
+msgstr "Letzter Eintrag: [COLOR deepskyblue]{0:s}[/COLOR]"
+
+msgctxt "#32007"
+msgid "Page {0:s}"
+msgstr "Seite {0:s}"
+
+msgctxt "#32008"
+msgid "Add to Favorites"
+msgstr "zu Favoriten hinzufügen"
+
+msgctxt "#32009"
+msgid "Remove from Favorites"
+msgstr "aus Favoriten entfernen"
+
+msgctxt "#32010"
+msgid "SUCCESSFULL :"
+msgstr "ERFOLGREICH :"
+
 msgctxt "#32011"
+msgid "[COLOR green]ADDED[/COLOR] * [COLOR blue]{0:s}[/COLOR] * [COLOR green]TO FAVORITES ![/COLOR]"
+msgstr "* [COLOR blue]{0:s}[/COLOR] * [COLOR green]ZU DEN FAVORITEN HINZUGEFÜGT ![/COLOR]"
+
+msgctxt "#32012"
+msgid "[COLOR red]REMOVED[/COLOR] * [COLOR blue]{0:s}[/COLOR] * [COLOR red]FROM FAVORITES ![/COLOR]"
+msgstr "* [COLOR blue]{0:s}[/COLOR] * [COLOR red]AUS DEN FAVORITEN ENTFERNT ![/COLOR]"
+
+msgctxt "#32013"
 msgid "Search for TV Show"
 msgstr "Suchen nach Fernsehsendung"
 
-msgctxt "#32012"
-msgid "Sorting of the Items:"
-msgstr "Sortierung der Einträge"
+msgctxt "#32101"
+msgid "Debug"
+msgstr ""
 
-msgctxt "#32013"
-msgid "ordered by release (like in the App)"
-msgstr "Nach Erscheinungsdatum (wie in der App)"
-
-msgctxt "#32014"
-msgid "orderes by Name"
-msgstr "Nach Name"
-
-msgctxt "#32015"
-msgid "SUCCESS"
-msgstr "ERFOLG"
-
-msgctxt "#32016"
-msgid "ADDED '%s' TO FAVORITES"
-msgstr "'%s' ZU DEN FAVORITEN HINZUGEFÜGT"
-
-msgctxt "#32017"
-msgid "REMOVED '%s' FROM FAVORITES"
-msgstr "'%s' AUS DEN FAVORITEN ENTFERNT"
-
-msgctxt "#32018"
+msgctxt "#32102"
 msgid "DRM System to use"
 msgstr "DRM System"
 
-msgctxt "#32019"
+msgctxt "#32103"
 msgid "WIDEVINE"
 msgstr ""
 
-msgctxt "#32020"
+msgctxt "#32104"
 msgid "PLAYREADY (Android only)"
 msgstr "PLAYREADY (nur Android)"
+
+msgctxt "#32105"
+msgid "alternative format for DRM content (720p with widevine)"
+msgstr "alternatives Format für DRM Inhalt (720p mit Widevine)"
+
+msgctxt "#32106"
+msgid "limit some categories to 20 items per page"
+msgstr "Limitiere einige Kategorien auf 20 Einträge pro Seite"
+
+msgctxt "#32107"
+msgid "Sorting of Episodes"
+msgstr "Sortierung der Episoden"
+
+msgctxt "#32108"
+msgid "ordered by release (like in the App)"
+msgstr "Nach Erscheinungsdatum (wie in der App)"
+
+msgctxt "#32109"
+msgid "Other methods to choose from"
+msgstr "Weitere Methoden zur Auswahl"
