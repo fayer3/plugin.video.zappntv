@@ -37,7 +37,7 @@ except ImportError:
 
 import locale
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import hashlib
 import json
 import gzip
@@ -62,7 +62,7 @@ setContent(plugin.handle, '')
 
 @plugin.route('/')
 def index():
-    icon = get_url(ids.collections_request_url % (ids.icon_id, "1"))
+    icon = get_url(ids.collections_request_url.format(id=ids.icon_id, page="1"))
     live_icon = ""
     highlights_icon = ""
     highlights_id = ids.highlights_id
@@ -89,7 +89,7 @@ def index():
                 tv_programm_icon = image_json["menu_icon"]
     else:
         kodiutils.notification("ERROR getting URL", "using saved values")
-    icon_search = get_url(ids.collections_request_url % (ids.search_icon_id, "1"))
+    icon_search = get_url(ids.collections_request_url.format(id=ids.search_icon_id, page="1"))
     search_icon = ""
     settings_icon = ""
     if icon_search != "":
@@ -239,11 +239,61 @@ def show_category(category_id):
             listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
+    elif category_id == "tvprogramm":
+        channels = get_url(ids.collections_request_url.format(id=ids.epg_id, page = "1"), critical=True)
+        channels_json = json.loads(channels)
+        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+        for channel in channels_json["results"]:
+            listitem = ListItem(channel["name"])
+            if listitem.getLabel() != "Puls4 TV":
+                listitem.setLabel(listitem.getLabel().replace("Puls4 ", ""))
+            images = json.loads(channel["images_json"])
+            if "image_base" in images and images["image_base"]:
+                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"]})
+            else:
+                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"]})
+            addDirectoryItem(plugin.handle, url=plugin.url_for(
+                show_epg, channel["id"]), listitem=listitem, isFolder=True)
+
     else:
         addDirectoryItem(plugin.handle, "", ListItem(kodiutils.get_string(32004)), False)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/category/mediathek/id=<mediathek_id>')
+@plugin.route('/category/epg/id=<channel_id>/')
+def show_epg(channel_id):
+    today = date.today()
+    # show epg from today
+    show_epg_programm(channel_id, today.strftime("%Y%m%d"))
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/epg/id=<channel_id>/date=<>date/')
+def show_epg_programm(channel_id, date):
+    setContent(plugin.handle, 'tvshows')
+    programs = json.loads(get_url(ids.epg_request_url.format(channel_id=channel_id, date=date), critical=True))
+    for program in programs["programs"]:
+        startDATES = datetime(*(time.strptime(program['starts_at'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
+        LOCALstart = utc_to_local(startDATES)
+        startTIMES = LOCALstart.strftime('%H:%M')
+        goDATE =  LOCALstart.strftime('%d.%m.%Y')
+
+        endDATES = datetime(*(time.strptime(program['ends_at'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
+        LOCALend = utc_to_local(endDATES)
+        endTIMES = LOCALend.strftime('%H:%M')
+
+        if '\n' in program["name"]:
+            name = program["name"].split('\n')[1]
+        else:
+            name = program["name"]
+
+        listitem = ListItem(startTIMES+": "+program["name"].replace("\n", ": "))
+        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': startTIMES+" - "+endTIMES+'[CR]'+program["description"], 'mediatype': 'video', 'TvShowTitle': program["name"].split('\n')[0], 'Date': goDATE})
+        images = json.loads(program["images_json"])
+        if "image_base" in images:
+            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"]})
+        addDirectoryItem(plugin.handle, url=None, listitem=listitem)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/mediathek/id=<mediathek_id>/')
 def show_mediathek(mediathek_id):
     get_by_collection(mediathek_id, "1")
     endOfDirectory(plugin.handle)
@@ -253,10 +303,10 @@ def show_search():
     query = xbmcgui.Dialog().input(kodiutils.get_string(32001))
     if query != "":
         search_id = ids.search_id
-        channels = json.loads(get_url(ids.categories_request_url % search_id, critical=True))
+        channels = json.loads(get_url(ids.categories_request_url.format(id=search_id), critical=True))
         shows = {}
         for channel in channels["category"]["children"]:
-            channel_shows = json.loads(get_url(ids.categories_request_url % channel["id"], critical=True))
+            channel_shows = json.loads(get_url(ids.categories_request_url.format(id=channel["id"]), critical=True))
             for show in channel_shows["category"]["children"]:
                 shows.update({show["name"]+" | "+show["top_level_category"]["name"] : show})
         result = {}
@@ -427,7 +477,7 @@ def play_video(video_id, channel):
 
 @plugin.route('/category/by_category/<category_id>/')
 def get_by_category(category_id):
-    dir = get_url(ids.categories_request_url % category_id, critical=True)
+    dir = get_url(ids.categories_request_url.format(id=category_id), critical=True)
     dir_json = json.loads(dir)
     special = ['ganze folgen', 'clips', 'bonus']
     if "children" in dir_json["category"]:
@@ -449,10 +499,10 @@ def get_by_category(category_id):
                 fanart_child = ""
                 if "images_json" in child:
                     images_child = json.loads(child["images_json"])
-                    if "image_base" in images:
-                        icon_child = images["image_base"]
-                    if "image_show_big" in images:
-                        fanart_child = images["image_show_big"]
+                    if "image_base" in images_child:
+                        icon_child = images_child["image_base"]
+                    if "image_show_big" in images_child:
+                        fanart_child = images_child["image_show_big"]
             listitem = ListItem(name)
             listitem.setArt({'icon': icon_child, 'thumb': icon_child, 'fanart': fanart_child})
             plot = ""
@@ -513,7 +563,7 @@ def get_by_collection(collection_id, page):
 
 
 def add_directories(id, page = "1", recursive=False, prefix=""):
-    dir = get_url(ids.collections_request_url % (id, page), critical=True)
+    dir = get_url(ids.collections_request_url.format(id=id, page=page), critical=True)
     dir_json = json.loads(dir)
     for item in dir_json["results"]:
         setContent(plugin.handle, 'tvshows')
@@ -691,7 +741,7 @@ def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
                 listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"]})
         if "next_program" in channel:
             #'Title': channel["name"]
-            listitem.setInfo(type='Video', infoLabels={'Title': channel["name"], 'Plot': channel["next_program"]["name"]+'[CR]'+channel["next_program"]["description"], 'mediatype': 'video'})
+            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+channel["next_program"]["description"], 'mediatype': 'video'})
             program_images = json.loads(channel["next_program"]["images_json"])
             if program_images:
                 listitem.setArt({'fanart' : program_images["image_base"]})

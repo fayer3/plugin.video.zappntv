@@ -86,8 +86,10 @@ xxtea_key = "3543373833383336354337383634363635433738363633383236354337383330363
 
 overview_url="https://admin.applicaster.com/v12/accounts/357.json?&include_voucher_templates=false&api[store]=android&api[ver]=1.2&api[bundle]=at.zappn&api[bver]=1.0.10"
 
-collections_request_url = "https://admin.applicaster.com/v12/accounts/357/broadcasters/410/collections/%s/items.json?&page=%s"
-categories_request_url =  "https://admin.applicaster.com/v12/accounts/357/broadcasters/410/categories/%s.json?&api[ver]=1.2&api[bundle]=at.zappn&api[bver]=1.0.10&api[os_type]=android&api[os_version]=25&api[store]=android"
+collections_request_url = "https://admin.applicaster.com/v12/accounts/357/broadcasters/410/collections/{id}/items.json?&page={page}"
+categories_request_url =  "https://admin.applicaster.com/v12/accounts/357/broadcasters/410/categories/{id}.json?&api[ver]=1.2&api[bundle]=at.zappn&api[bver]=1.0.10&api[os_type]=android&api[os_version]=25&api[store]=android"
+
+epg_request_url = "http://admin.applicaster.com/v12/accounts/357/channels/{channel_id}/programs.json?date={date}" #date=YYYYMMDD
 
 #from https://admin.applicaster.com/v12/accounts/357/broadcasters/410/collections.json
 icon_id = "7617" #Bottom Tab Navigation Collection - Android
@@ -97,6 +99,8 @@ highlights_id = "6764"
 mediathek_id = "6625"
 tv_programm_id = "97407"
 search_id = "80740"
+
+epg_id = "7263"
 
 config_cache = {}
 config_tag = {}

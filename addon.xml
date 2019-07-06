@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zappntv" name="Zappn TV" version="1.0.1" provider-name="fayer3">
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.0.2" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -23,17 +23,8 @@
         <website>https://zappn.tv/</website>
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
-        <news>Features von realvito hinzugefügt:
-          - Directories (Folder+Not Folder) auf setcontent- tvshows gesetzt (so hat man mehr verschiedene Ansichten in jedem Skin)
-          - fanart für Episoden hinzugefügt (da der thumb in dieser Sektion gross genug ist)
-          - thumb und fanart für Clips, Bonus und Ganze Folgen repariert
-          - Mediathek: bei den jeweiligen Sendungen - Plot mit letztem Eintragsdatum hinzugefügt
-          - Mediathek: bei den Episoden der Sendungen - Austrahlungsdatum im Plot hinzugefügt
-          - Deine Sortiermethode nur noch bei den Episoden eingesetzt und zus. Auswahl = Standard, Name, Dauer, Datum
-          - dementsprechend die Übersetzungen angepasst
-
-          - Kodi Favoriten repariert, Ordner und Videos können jetzt mit Vorschaubild zu den Kodi Favoriten hinzugefügt werden
-          - Icons für Livestreams aus Deutschland und Schweiz hinzugefügt</news>
+        <news>- Categorien mit blidern repariert
+        - Erste Version des TV Programms</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

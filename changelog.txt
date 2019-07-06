@@ -13,3 +13,6 @@ v1.0.1
   - adapted translation for changes
 - fixed Kodi Favorites: Folders and Videos added now have a thumbnail and are now selectable
 - added Icons for livestreams from germany and switzerland
+v1.0.2
+- Fixed showing of categories with image
+- preview of TV Programm
