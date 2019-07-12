@@ -43,6 +43,7 @@ import hashlib
 import json
 import gzip
 import sys
+import re
 
 ADDON = xbmcaddon.Addon()
 logger = logging.getLogger(ADDON.getAddonInfo('id'))
@@ -655,12 +656,21 @@ def get_by_category(category_id):
                 except: pass
             if startTIMES != "": Note_1 = kodiutils.get_string(32005).format(str(startTIMES))
             if goDATE and kodiutils.get_setting("sort") == "1": xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
+            if vod['title'].lower().find('staffel') > -1 or vod['title'].lower().find('episode') > -1:
+                try: vod['season'] = re.search('Staffel\s*(\d+)', vod['title']).group(1)
+                except: pass
+                try: vod['episode'] = re.search('Episode\s*(\d+)', vod['title']).group(1)
+                except: pass
+                try: vod['cleantitle'] = re.search(':\s*(.*)', vod['title']).group(1)
+                except: pass
+                if vod.get('season', -1) != -1 or vod.get('episode', -1) != -1:
+                    vod['mediatype'] = 'episode'
 
             images = json.loads(vod["images_json"])
             listitem = ListItem(vod["title"])
             listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"]})
             listitem.setProperty('IsPlayable', 'true')
-            listitem.setInfo(type='Video', infoLabels={'Title': vod['title'], 'Plot': Note_1+Note_2, 'TvShowTitle': vod['show_name'], 'Duration': vod['duration'], 'Date': goDATE, 'mediatype': 'video'})
+            listitem.setInfo(type='Video', infoLabels={'Title': vod.get('cleantitle', vod["title"]), 'Plot': Note_1+Note_2, 'TvShowTitle': vod['show_name'], 'Season': vod.get('season', -1), 'episode': vod.get('episode', -1), 'Duration': vod['duration'], 'Date': goDATE, 'mediatype': vod.get('mediatype', 'video')})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
             addDirectoryItem(plugin.handle, url=plugin.url_for(play_video, vod["external_id"], vod["top_level_category"]["name"]),
                 listitem=listitem)
