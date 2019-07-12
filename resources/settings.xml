@@ -6,4 +6,5 @@
     <setting id="oldformat" enable="eq(-1,0)" type="bool" label="32105" default="true"/>
     <setting id="limitlist" type="bool" label="32106" default="false"/>
     <setting id="sort" type="select" label="32107" lvalues="32108|32109"/>
+    <setting id="keep_episode_number" type="bool" label="32115" default="true"/>
 </settings>

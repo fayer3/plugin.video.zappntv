@@ -186,3 +186,7 @@ msgstr ""
 msgctxt "#32114"
 msgid "video (lower quality)"
 msgstr "video (niedrigere Qualität)"
+
+msgctxt "#32115"
+msgid "keep season and episode number in video title"
+msgstr "behalte Staffel und Episoden Nummer im Videotitel"

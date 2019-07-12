@@ -32,7 +32,10 @@
     - hls
     - video (niedrigere Qualität)
 - Abhängigkeit von inputstream.adaptive entfernt, wird jetzt vor der Wiedergabe installiert
-- Fehlschlag von Wiedergabe repariert, Wiedergabe geschieht nun nur einmal</news>
+- Fehlschlag von Wiedergabe repariert, Wiedergabe geschieht nun nur einmal
+- extrahieren von Staffel- und Folgennummer aus Videotitle
+- Option zum entfernen der Staffel- und Folgennummer aus dem Videotitel
+- benutze thumbnail als poster Bild</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

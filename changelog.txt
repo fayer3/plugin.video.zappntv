@@ -28,3 +28,6 @@ v1.1.0
     - video (lower quality)
 - removed requirement of inputstream.adaptive, is now installed before playback
 - fixed error on playback, playback is now only attempted once
+- get season and episode number of video from title
+- add option to remove season and episode number from title
+- add thumbnail as poster image for videos

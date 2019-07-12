@@ -200,31 +200,31 @@ def show_category(category_id):
             id = "_ch"
             name = " CH"
         listitem = get_listitem(name="Kabel eins"+name)
-        listitem.setArt({'icon': icon_path.format("kabeleins"), 'thumb': icon_path.format("kabeleins")})
+        listitem.setArt({'icon': icon_path.format("kabeleins"), 'thumb': icon_path.format("kabeleins"), 'poster': icon_path.format("kabeleins")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "kabeleins"+id), listitem=listitem)
         listitem = get_listitem(name="Kabel1Doku"+name)
-        listitem.setArt({'icon': icon_path.format("kabeleinsdoku"), 'thumb': icon_path.format("kabeleinsdoku")})
+        listitem.setArt({'icon': icon_path.format("kabeleinsdoku"), 'thumb': icon_path.format("kabeleinsdoku"), 'poster': icon_path.format("kabeleinsdoku")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "kabeleinsdoku"+id), listitem=listitem)
         listitem = get_listitem(name="ProSieben"+name)
-        listitem.setArt({'icon': icon_path.format("prosieben"), 'thumb': icon_path.format("prosieben")})
+        listitem.setArt({'icon': icon_path.format("prosieben"), 'thumb': icon_path.format("prosieben"), 'poster': icon_path.format("prosieben")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "prosieben"+id), listitem=listitem)
         listitem = get_listitem(name="ProSiebenMaxx"+name)
-        listitem.setArt({'icon': icon_path.format("prosiebenmaxx"), 'thumb': icon_path.format("prosiebenmaxx")})
+        listitem.setArt({'icon': icon_path.format("prosiebenmaxx"), 'thumb': icon_path.format("prosiebenmaxx"), 'poster': icon_path.format("prosiebenmaxx")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "prosiebenmaxx"+id), listitem=listitem)
         listitem = get_listitem(name="SAT.1"+name)
-        listitem.setArt({'icon': icon_path.format("sat1"), 'thumb': icon_path.format("sat1")})
+        listitem.setArt({'icon': icon_path.format("sat1"), 'thumb': icon_path.format("sat1"), 'poster': icon_path.format("sat1")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "sat1"+id), listitem=listitem)
         listitem = get_listitem(name="SAT.1 Gold"+name)
-        listitem.setArt({'icon': icon_path.format("sat1gold"), 'thumb': icon_path.format("sat1gold")})
+        listitem.setArt({'icon': icon_path.format("sat1gold"), 'thumb': icon_path.format("sat1gold"), 'poster': icon_path.format("sat1gold")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "sat1gold"+id), listitem=listitem)
         listitem = get_listitem(name="Sixx"+name)
-        listitem.setArt({'icon': icon_path.format("sixx"), 'thumb': icon_path.format("sixx")})
+        listitem.setArt({'icon': icon_path.format("sixx"), 'thumb': icon_path.format("sixx"), 'poster': icon_path.format("sixx")})
         addDirectoryItem(plugin.handle, url=plugin.url_for(
             play_livestream, "sixx"+id), listitem=listitem)
 
@@ -238,7 +238,7 @@ def show_category(category_id):
 
         for item in favorites:
             listitem = ListItem(favorites[item]["name"])
-            listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
+            listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'poster':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
     elif category_id == "tvprogramm":
@@ -255,7 +255,7 @@ def show_category(category_id):
                 icon = images["image_base"]
             else:
                 icon = images["icon_1"]
-            listitem.setArt({'icon': icon, 'thumb': icon})
+            listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
             addDirectoryItem(plugin.handle, url=plugin.url_for(
                 show_epg, channel_id=channel["id"], icon=quote(icon)), listitem=listitem, isFolder=True)
 
@@ -330,9 +330,9 @@ def show_epg_programm(channel_id, date):
             'Duration': (LOCALend-LOCALstart).total_seconds()})
         images = json.loads(program["images_json"])
         if "image_base" in images:
-            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"]})
+            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'poster': images["image_base"], 'fanart': images["image_base"]})
         else:
-            listitem.setArt({'icon': unquote(icon), 'thumb': unquote(icon), 'fanart': unquote(icon)})
+            listitem.setArt({'icon': unquote(icon), 'thumb': unquote(icon), 'poster': unquote(icon), 'fanart': unquote(icon)})
         addDirectoryItem(plugin.handle, url=None, listitem=listitem)
     endOfDirectory(plugin.handle)
 
@@ -366,7 +366,7 @@ def show_search():
                 if "image_show_big" in images:
                     fanart = images["image_show_big"]
             listitem = ListItem(result[show]["name"]+" | "+result[show]["top_level_category"]["name"])
-            listitem.setArt({'icon': icon, 'thumb': icon, 'fanart' : fanart})
+            listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'fanart' : fanart})
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, result[show]["id"]),
                 listitem=listitem, isFolder=True)
     endOfDirectory(plugin.handle)
@@ -622,7 +622,7 @@ def get_by_category(category_id):
                     if "image_show_big" in images_child:
                         fanart_child = images_child["image_show_big"]
             listitem = ListItem(name)
-            listitem.setArt({'icon': icon_child, 'thumb': icon_child, 'fanart': fanart_child})
+            listitem.setArt({'icon': icon_child, 'thumb': icon_child, 'poster': icon_child, 'fanart': fanart_child})
             plot = ""
             if 'description' in child and child['description'] != None:
                 try:
@@ -641,12 +641,15 @@ def get_by_category(category_id):
             xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_UNSORTED)
             xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
             xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_DURATION)
+            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_EPISODE)
         setContent(plugin.handle, 'tvshows')
         for vod in dir_json["category"]["vod_items"]:
             goDATE = None
             startTIMES = ""
             Note_1 = ""
             Note_2 = vod["summary"]
+            if not Note_2:
+                Note_2 = ""
             if 'order_date' in vod and not str(vod['order_date']).startswith('1970') and vod['order_date'] != None:
                 try:
                     startDATES = datetime(*(time.strptime(vod['order_date'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
@@ -656,21 +659,24 @@ def get_by_category(category_id):
                 except: pass
             if startTIMES != "": Note_1 = kodiutils.get_string(32005).format(str(startTIMES))
             if goDATE and kodiutils.get_setting("sort") == "1": xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
-            if vod['title'].lower().find('staffel') > -1 or vod['title'].lower().find('episode') > -1:
+            if vod['title'].lower().find('staffel') > -1 or vod['title'].lower().find('episode') > -1 or vod['title'].lower().find('folge') > -1:
                 try: vod['season'] = re.search('Staffel\s*(\d+)', vod['title']).group(1)
                 except: pass
                 try: vod['episode'] = re.search('Episode\s*(\d+)', vod['title']).group(1)
-                except: pass
-                try: vod['cleantitle'] = re.search(':\s*(.*)', vod['title']).group(1)
-                except: pass
+                except:
+                    try:vod['episode'] = re.search('Folge\s*(\d+)', vod['title']).group(1)
+                    except: pass
+                if not kodiutils.get_setting_as_bool('keep_episode_number'):
+                    try: vod['cleantitle'] = re.search(':\s*(.*)', vod['title']).group(1)
+                    except: pass
                 if vod.get('season', -1) != -1 or vod.get('episode', -1) != -1:
                     vod['mediatype'] = 'episode'
-
+            log("Title: "+vod["title"])
             images = json.loads(vod["images_json"])
             listitem = ListItem(vod["title"])
-            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"]})
+            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"], 'poster': images["image_base"]})
             listitem.setProperty('IsPlayable', 'true')
-            listitem.setInfo(type='Video', infoLabels={'Title': vod.get('cleantitle', vod["title"]), 'Plot': Note_1+Note_2, 'TvShowTitle': vod['show_name'], 'Season': vod.get('season', -1), 'episode': vod.get('episode', -1), 'Duration': vod['duration'], 'Date': goDATE, 'mediatype': vod.get('mediatype', 'video')})
+            listitem.setInfo(type='Video', infoLabels={'Title': vod.get('cleantitle', vod["title"]), 'Plot': Note_1+Note_2, 'TvShowTitle': vod['show_name'], 'Season': vod.get('season', "-1"), 'episode': vod.get('episode', "-1"), 'Duration': vod['duration'], 'Date': goDATE, 'mediatype': vod.get('mediatype', 'video')})
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
             addDirectoryItem(plugin.handle, url=plugin.url_for(play_video, vod["external_id"], vod["top_level_category"]["name"]),
                 listitem=listitem)
@@ -701,7 +707,7 @@ def add_directories(id, page = "1", recursive=False, prefix=""):
                 if item["top_level_category"]["name"].lower() == item["name"].lower():
                     name = item["promotion_name"]
             listitem = ListItem(name)
-            listitem.setArt({'icon': images["image_base"],'thumb': images["image_base"]})
+            listitem.setArt({'icon': images["image_base"],'thumb': images["image_base"], 'poster': images["image_base"]})
             if "image_show_big" in images:
                 listitem.setArt({"fanart" : images["image_show_big"]})
             plot = ""
@@ -863,9 +869,9 @@ def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
         images = json.loads(channel["images_json"])
         if images:
             if "image_base" in images and images["image_base"]:
-                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"]})
+                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"], 'poster':images["image_base"]})
             else:
-                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"]})
+                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"], 'poster':images["icon_1"]})
         if "next_program" in channel:
             #'Title': channel["name"]
             listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+channel["next_program"]["description"], 'mediatype': 'video'})
@@ -877,7 +883,7 @@ def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
         listitem.setProperty('IsPlayable', 'true')
         listitem.setInfo(type='Video', infoLabels={'mediatype': 'video'})
         if icon != "":
-            listitem.setArt({'icon':icon, 'thumb':icon})
+            listitem.setArt({'icon':icon, 'thumb':icon, 'poster':icon})
         if fanart != "":
             listitem.setArt({'fanart':fanart})
     return listitem
