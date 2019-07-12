@@ -583,7 +583,7 @@ def play_video(video_id, channel):
                 setResolvedUrl(plugin.handle, False, playitem)
             else:
                 if xbmcgui.Dialog().yesno(heading=kodiutils.get_string(32020), line1=kodiutils.get_string(32021), line2=kodiutils.get_string(32022).format(kodiutils.get_string(32110))):
-                    if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion'):
+                    if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
                         kodiutils.set_setting('non_drm_format', 3)
                     else:
                         kodiutils.set_setting('non_drm_format', 2)
