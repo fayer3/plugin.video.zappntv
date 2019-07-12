@@ -16,3 +16,15 @@ v1.0.1
 v1.0.2
 - Fixed showing of categories with image
 - preview of TV Programm
+v1.1.0
+- full TV Programm added
+- added Kodi version check for DRM
+  - DRM contetnt is only playabe wit Kodi version > 18.0 and inputstream.adaptive > 2.2.2
+- support for playback without inputstream.adaptive
+  - choose between these formats:
+    - dash (with inputstream.adaptive)
+    - hls (with inputstream.adaptive)
+    - hls
+    - video (lower quality)
+- removed requirement of inputstream.adaptive, is now installed before playback
+- fixed error on playback, playback is now only attempted once

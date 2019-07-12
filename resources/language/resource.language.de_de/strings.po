@@ -70,6 +70,67 @@ msgctxt "#32013"
 msgid "Search for TV Show"
 msgstr "Suchen nach Fernsehsendung"
 
+msgctxt "#32014"
+msgid "past program"
+msgstr "Vergangenes Programm"
+
+msgctxt "#32015"
+msgid "program from [COLOR chartreuse]{0:s}[/COLOR]"
+msgstr "Programm vom [COLOR chartreuse]{0:s}[/COLOR]"
+
+msgctxt "#32016"
+msgid "{0:s}[CR]From [COLOR chartreuse]{1:s}[/COLOR] to [COLOR chartreuse]{2:s}[/COLOR][CR][CR]"
+msgstr "{0:s}[CR]von [COLOR chartreuse]{1:s}[/COLOR] bis [COLOR chartreuse]{2:s}[/COLOR][CR][CR]"
+
+msgctxt "#32017"
+msgid "today"
+msgstr "Heute"
+
+msgctxt "#32018"
+msgid "DRM '{0}' is not supported"
+msgstr "DRM '{0}' wird nicht unterstützt"
+
+msgctxt "#32019"
+msgid "DRM content requires 'inputstream.adaptive'"
+msgstr "DRM Inhalt benötigt 'inputstream.adaptive'"
+
+msgctxt "#32020"
+msgid "'{0}' is not installed"
+msgstr "'{0}' ist nicht installiert"
+
+msgctxt "#32021"
+msgid "'inputstream.adaptive' is failed to install. Would you like to switch to a format that doesn't require that?"
+msgstr "Die Installation von 'inputstream.adaptive' schlug fehl. Willst du auf ein Format wechseln, welches dies nicht benötigt?"
+
+msgctxt "#32022"
+msgid "changable in the addon settings '{0}'"
+msgstr "änderbar in den Addon Einstellungen '{0}'"
+
+msgctxt "#32023"
+msgid "'inputstream.adaptive' version to low"
+msgstr "'inputstream.adaptive' Version zu niedrig"
+
+msgctxt "#32024"
+msgid "Version '2.2.2' or greater is required to watch DRM protected content."
+msgstr "Version '2.2.2' oder höher wird benötigt, um DRM geschützte Inhalt darzustellen."
+
+msgctxt "#32025"
+msgid "DRM content requires Kodi 18.0"
+msgstr " Für DRM Inhalte wird Kodi 18.0 benötigt"
+
+
+msgctxt "#32026"
+msgid "Austria"
+msgstr "Österreich"
+
+msgctxt "#32027"
+msgid "Germany"
+msgstr "Deutschland"
+
+msgctxt "#32028"
+msgid "Switzerland"
+msgstr "Schweiz"
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -105,3 +166,23 @@ msgstr "Nach Erscheinungsdatum (wie in der App)"
 msgctxt "#32109"
 msgid "Other methods to choose from"
 msgstr "Weitere Methoden zur Auswahl"
+
+msgctxt "#32110"
+msgid "Video format to use for non DRM content"
+msgstr "Videoformat für nicht DRM geschützte Inhalt"
+
+msgctxt "#32111"
+msgid "dash (with inputstream.adaptive)"
+msgstr "dash (mit inputstream.adaptive)"
+
+msgctxt "#32112"
+msgid "hls (with inputstream.adaptive)"
+msgstr "hls (mit inputstream.adaptive)"
+
+msgctxt "#32113"
+msgid "hls"
+msgstr ""
+
+msgctxt "#32114"
+msgid "video (lower quality)"
+msgstr "video (niedrigere Qualität)"

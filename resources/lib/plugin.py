@@ -13,6 +13,7 @@ from resources.lib import ids
 from resources.lib import xxtea
 from xbmcgui import ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory, setResolvedUrl, setContent
+from distutils.version import LooseVersion
 
 import codecs
 
@@ -157,11 +158,11 @@ def show_category(category_id):
         addDirectoryItem(plugin.handle, plugin.url_for(
             play_livestream, "atv2"), get_listitem(name="ATV 2", channel=channel))
         addDirectoryItem(plugin.handle, plugin.url_for(
-            show_category, "austria"), ListItem("Austria"), True)
+            show_category, "austria"), ListItem(kodiutils.get_string(32026)), True)
         addDirectoryItem(plugin.handle, plugin.url_for(
-            show_category, "germany"), ListItem("Germany"), True)
+            show_category, "germany"), ListItem(kodiutils.get_string(32027)), True)
         addDirectoryItem(plugin.handle, plugin.url_for(
-            show_category, "switzerland"), ListItem("Switzerland"), True)
+            show_category, "switzerland"), ListItem(kodiutils.get_string(32028)), True)
     elif category_id == "austria":
         channels = get_url(ids.overview_url)
         json_data = {}
@@ -248,12 +249,14 @@ def show_category(category_id):
             if listitem.getLabel() != "Puls4 TV":
                 listitem.setLabel(listitem.getLabel().replace("Puls4 ", ""))
             images = json.loads(channel["images_json"])
+            icon = ""
             if "image_base" in images and images["image_base"]:
-                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"]})
+                icon = images["image_base"]
             else:
-                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"]})
+                icon = images["icon_1"]
+            listitem.setArt({'icon': icon, 'thumb': icon})
             addDirectoryItem(plugin.handle, url=plugin.url_for(
-                show_epg, channel["id"]), listitem=listitem, isFolder=True)
+                show_epg, channel_id=channel["id"], icon=quote(icon)), listitem=listitem, isFolder=True)
 
     else:
         addDirectoryItem(plugin.handle, "", ListItem(kodiutils.get_string(32004)), False)
@@ -261,13 +264,47 @@ def show_category(category_id):
 
 @plugin.route('/category/epg/id=<channel_id>/')
 def show_epg(channel_id):
+    icon = ""
+    if 'icon' in plugin.args:
+        icon = plugin.args['icon'][0]
     today = date.today()
+    # past epg
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_epg_past, channel_id=channel_id, icon=icon), ListItem(kodiutils.get_string(32014)), True)
     # show epg from today
-    show_epg_programm(channel_id, today.strftime("%Y%m%d"))
+    addDirectoryItem(plugin.handle, plugin.url_for(
+        show_epg_programm, channel_id=channel_id, date=today.strftime("%Y%m%d"), icon=icon),
+        ListItem(kodiutils.get_string(32015).format(kodiutils.get_string(32017))), True)
+    # future epg
+    for i in range(1, 14, 1):
+        future_date = today + timedelta(days = i)
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            show_epg_programm, channel_id=channel_id, date=future_date.strftime("%Y%m%d"), icon=icon),
+            ListItem(kodiutils.get_string(32015).format(future_date.strftime("%d.%m.%Y"))), True)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/category/epg/id=<channel_id>/date=<>date/')
+@plugin.route('/category/epg/id=<channel_id>/past/')
+def show_epg_past(channel_id):
+    icon = ""
+    if 'icon' in plugin.args:
+        icon = plugin.args['icon'][0]
+    today = date.today()
+    # past epg
+    for i in range(-1,-60, -1):
+        past_date = today + timedelta(days = i)
+        #show_epg_programm(channel_id, past_date.strftime("%Y%m%d"), icon)
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            show_epg_programm, channel_id=channel_id, date=past_date.strftime("%Y%m%d"), icon=icon),
+            ListItem(kodiutils.get_string(32015).format(past_date.strftime("%d.%m.%Y"))), True)
+    endOfDirectory(plugin.handle)
+
+
+
+@plugin.route('/category/epg/id=<channel_id>/date=<date>/')
 def show_epg_programm(channel_id, date):
+    icon = ""
+    if 'icon' in plugin.args:
+        icon = unquote(plugin.args['icon'][0])
     setContent(plugin.handle, 'tvshows')
     programs = json.loads(get_url(ids.epg_request_url.format(channel_id=channel_id, date=date), critical=True))
     for program in programs["programs"]:
@@ -285,11 +322,16 @@ def show_epg_programm(channel_id, date):
         else:
             name = program["name"]
 
-        listitem = ListItem(startTIMES+": "+program["name"].replace("\n", ": "))
-        listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': startTIMES+" - "+endTIMES+'[CR]'+program["description"], 'mediatype': 'video', 'TvShowTitle': program["name"].split('\n')[0], 'Date': goDATE})
+        listitem = ListItem("[COLOR chartreuse]"+startTIMES+": [/COLOR]"+program["name"].replace("\n", ": "))
+        listitem.setInfo(type='Video', infoLabels={'Title': name,
+            'Plot': kodiutils.get_string(32016).format(goDATE, startTIMES, endTIMES)+program["description"],
+            'mediatype': 'video', 'TvShowTitle': program["name"].split('\n')[0], 'Date': goDATE,
+            'Duration': (LOCALend-LOCALstart).total_seconds()})
         images = json.loads(program["images_json"])
         if "image_base" in images:
             listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"]})
+        else:
+            listitem.setArt({'icon': unquote(icon), 'thumb': unquote(icon), 'fanart': unquote(icon)})
         addDirectoryItem(plugin.handle, url=None, listitem=listitem)
     endOfDirectory(plugin.handle)
 
@@ -338,6 +380,12 @@ def play_livestream(livestream_id):
     resp_prot = get_url(protocols_url, critical=True)
     protocols = json.loads(resp_prot)
 
+    if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
+        log("version is: " + xbmc.getInfoLabel('System.BuildVersion'))
+        kodiutils.notification('ERROR', kodiutils.get_string(32025))
+        setResolvedUrl(plugin.handle, False, ListItem('none'))
+        return
+
     protocol = ""
     drm = ""
     if kodiutils.get_setting("drm") == "0":
@@ -348,33 +396,51 @@ def play_livestream(livestream_id):
         protocol = "dash:playready"
         drm_name = "playready"
         drm = 'com.microsoft.playready'
-    logger.critical("drm: "+drm)
+    log("drm: "+drm)
 
     client_server_token = get_livestream_server_client_token(access_token=mdslive["accessToken"], client_location=mdslive["clientLocation"], salt=mdslive["salt"], property_name=ids.get_livestream_channel_id(livestream_id), protocols=protocol, server_token=protocols["server_token"])
     urls_url = mdslive["baseUrl"]+"live/1.0/geturls?access_token="+mdslive["accessToken"]+"&client_location="+mdslive["clientLocation"]+"&client_token="+client_server_token+"&property_name="+ids.get_livestream_channel_id(livestream_id)+"&protocols="+protocol+"&secure_delivery=true"+"&server_token="+protocols["server_token"]
     resp_url = get_url(urls_url, critical=True)
     urls = json.loads(resp_url)
-    logger.critical(str(urls))
+    log("Available formats: " + str(urls))
 
     playitem = ListItem('none')
-
-    if inputstream and drm_name != "playready":
+    is_helper = None
+    try:
         is_helper = inputstreamhelper.Helper('mpd', drm=drm)
-        if is_helper.check_inputstream():
+    except Exception as e:
+        if str(e) == 'UnsupportedDRMScheme' and drm == 'com.microsoft.playready':
+            is_helper = inputstreamhelper.Helper('mpd', drm=None)
+            pass
+        else:
+            kodiutils.notification('ERROR', kodiutils.get_string(32018).format(drm))
+    #check for inputstream_addon
+    inputstream_installed = False
+    if is_helper:
+        inputstream_installed = is_helper._has_inputstream()
+
+    if is_helper and not inputstream_installed:
+        # ask to install inputstream
+        xbmc.executebuiltin('InstallAddon({})'.format(is_helper.inputstream_addon), True)
+        inputstream_installed = is_helper._has_inputstream()
+
+    if is_helper and inputstream_installed and is_helper.check_inputstream():
+        version = xbmcaddon.Addon('inputstream.adaptive').getAddonInfo('version')
+        if LooseVersion(version) < LooseVersion("2.2.2"):
+            # inputstream to old cannot play mpd
+            xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
+            setResolvedUrl(plugin.handle, False, ListItem(label='none'))
+        else:
             playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
             playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
             playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
             playitem.setProperty('inputstream.adaptive.license_type', drm)
             playitem.setProperty("inputstream.adaptive.manifest_update_parameter", "full")
             playitem.setProperty('inputstream.adaptive.license_key', urls["urls"]["dash"][drm_name]["drm"]["licenseAcquisitionUrl"] + "?token=" + urls["urls"]["dash"][drm_name]["drm"]["token"] +"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1" +'|R{SSM}|')
+            setResolvedUrl(plugin.handle, True, playitem)
     else:
-        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
-        playitem.setProperty('inputstreamaddon', 'inputstream.adaptive')
-        playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
-        playitem.setProperty('inputstream.adaptive.license_type', drm)
-        playitem.setProperty("inputstream.adaptive.manifest_update_parameter", "full")
-        playitem.setProperty('inputstream.adaptive.license_key', urls["urls"]["dash"][drm_name]["drm"]["licenseAcquisitionUrl"] + "?token=" + urls["urls"]["dash"][drm_name]["drm"]["token"] +"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1" +'|R{SSM}|')
-    setResolvedUrl(plugin.handle, True, playitem)
+        kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
+        setResolvedUrl(plugin.handle, False, playitem)
     #xbmc.Player().play(item=urls["urls"]["dash"]["widevine"]["url"], listitem=playitem)
 
 @plugin.route('/category/video/<video_id>/<channel>')
@@ -399,11 +465,12 @@ def play_video(video_id, channel):
     mdsV2 = config["mdsclient"]["mdsV2"]
     sources_request_url = mdsV2["baseUrl"]+"vas/live/v2/videos?access_token=%s&client_location=null&client_name=%s&ids=%s" % (mdsV2["accessToken"], mdsV2["clientName"], video_id)
     sources_request = json.loads(get_url(sources_request_url, critical=True))
-    logger.critical(str(sources_request))
+    log("sources_request: " + str(sources_request))
     protected = sources_request[0]["is_protected"]
     mpd_id = 0
     m3u8_id = 0
     ism_id = 0
+    mp4_id = 0
     protocol = ""
     for source in sources_request[0]["sources"]:
         if source["mimetype"] == "text/xml":
@@ -412,17 +479,19 @@ def play_video(video_id, channel):
             m3u8_id = source["id"]
         if source["mimetype"] == "application/dash+xml":
             mpd_id = source["id"]
+        if source["mimetype"] == "video/mp4":
+            mp4_id = source["id"]
     drm = None
     if not protected:
-        if mpd_id != 0:
+        if kodiutils.get_setting_as_int('non_drm_format') == 0:
             source_id = mpd_id
             protocol = "mpd"
-        elif m3u8_id != 0:
+        elif kodiutils.get_setting_as_int('non_drm_format') == 3:
+            source_id = mp4_id
+            protocol = "mp4"
+        else:
             source_id = m3u8_id
             protocol = "hls"
-        else:
-            source_id = ism_id
-            protocol = "ism"
     else:
         if kodiutils.get_setting("drm") == "0":
             source_id = mpd_id
@@ -434,6 +503,12 @@ def play_video(video_id, channel):
             protocol = "ism"
             drm_name = "playready"
             drm = 'com.microsoft.playready'
+
+    if protected and LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
+        log("version is: " + xbmc.getInfoLabel('System.BuildVersion'))
+        kodiutils.notification('ERROR', kodiutils.get_string(32025))
+        setResolvedUrl(plugin.handle, False, ListItem('none'))
+        return
 
     server_request_token = get_video_server_request_token(access_token=mdsV2["accessToken"], client_location="null", client_name=mdsV2["clientName"], video_id=video_id, salt=mdsV2["salt"])
     server_request_url = mdsV2["baseUrl"]+"vas/live/v2/videos/%s/sources?access_token=%s&client_id=%s&client_location=null&client_name=%s" % (video_id, mdsV2["accessToken"], server_request_token, mdsV2["clientName"])
@@ -454,26 +529,68 @@ def play_video(video_id, channel):
 
     source_url_request = json.loads(get_url(source_url_request_url, critical=True))
     if not "status_code" in source_url_request or source_url_request["status_code"] != 0:
-        logger.critical("error on video request: " + str(source_url_request))
+        log("error on video request: " + str(source_url_request))
         return sys.exit(0)
+
     playitem = ListItem('none')
-    if inputstream and kodiutils.get_setting("drm") == "0":
-        is_helper = inputstreamhelper.Helper(protocol, drm=drm)
-        if is_helper.check_inputstream():
-            playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request["sources"][0]["url"]+"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36")
-            playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
-            playitem.setProperty('inputstream.adaptive.manifest_type', protocol)
-            if protected:
-                playitem.setProperty('inputstream.adaptive.license_type', drm)
-                playitem.setProperty('inputstream.adaptive.license_key', source_url_request["drm"]["licenseAcquisitionUrl"] + "?token=" + source_url_request["drm"]["token"] +"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" +'|R{SSM}|')
-    else:
+    log("selected non drm format: " + kodiutils.get_setting('non_drm_format'))
+    log("media url: " + source_url_request["sources"][0]["url"])
+    if not protected and (kodiutils.get_setting_as_int('non_drm_format') == 2 or kodiutils.get_setting_as_int('non_drm_format') == 3):
         playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request["sources"][0]["url"]+"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36")
-        playitem.setProperty('inputstreamaddon', 'inputstream.adaptive')
-        playitem.setProperty('inputstream.adaptive.manifest_type', protocol)
-        if protected:
-            playitem.setProperty('inputstream.adaptive.license_type', drm)
-            playitem.setProperty('inputstream.adaptive.license_key', source_url_request["drm"]["licenseAcquisitionUrl"] + "?token=" + source_url_request["drm"]["token"] +"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" +'|R{SSM}|')
-    setResolvedUrl(plugin.handle, True, playitem)
+        setResolvedUrl(plugin.handle, True, playitem)
+    else:
+        is_helper = None
+        try:
+            is_helper = inputstreamhelper.Helper(protocol, drm=drm)
+        except Exception as e:
+            if str(e) == 'UnsupportedDRMScheme' and drm == 'com.microsoft.playready':
+                is_helper = inputstreamhelper.Helper(protocol, drm=None)
+                pass
+            else:
+                kodiutils.notification('ERROR', kodiutils.get_string(32018).format(drm))
+        #check for inputstream_addon
+        inputstream_installed = False
+        if is_helper:
+            inputstream_installed = is_helper._has_inputstream()
+
+        if is_helper and not inputstream_installed:
+            # ask to install inputstream
+            xbmc.executebuiltin('InstallAddon({})'.format(is_helper.inputstream_addon), True)
+            inputstream_installed = is_helper._has_inputstream()
+
+        if is_helper and inputstream_installed and is_helper.check_inputstream():
+            version = xbmcaddon.Addon('inputstream.adaptive').getAddonInfo('version')
+            if not protected and kodiutils.get_setting_as_int('non_drm_format') == 0 and LooseVersion(version) < LooseVersion("2.2.2"):
+                # inputstream to old cannot play mpd
+                # switch to hls
+                kodiutils.set_setting('non_drm_format', 1)
+                play_video(video_id, channel)
+            elif protected and LooseVersion(version) < LooseVersion("2.2.2"):
+                # inputstream to old cannot play mpd
+                xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
+                setResolvedUrl(plugin.handle, False, ListItem(label='none'))
+            else:
+                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request["sources"][0]["url"]+"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36")
+                playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
+                playitem.setProperty('inputstream.adaptive.manifest_type', protocol)
+                if protected:
+                    playitem.setProperty('inputstream.adaptive.license_type', drm)
+                    playitem.setProperty('inputstream.adaptive.license_key', source_url_request["drm"]["licenseAcquisitionUrl"] + "?token=" + source_url_request["drm"]["token"] +"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" +'|R{SSM}|')
+                setResolvedUrl(plugin.handle, True, playitem)
+        else:
+            if drm:
+                kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
+                setResolvedUrl(plugin.handle, False, playitem)
+            else:
+                if xbmcgui.Dialog().yesno(heading=kodiutils.get_string(32020), line1=kodiutils.get_string(32021), line2=kodiutils.get_string(32022).format(kodiutils.get_string(32110))):
+                    if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion'):
+                        kodiutils.set_setting('non_drm_format', 3)
+                    else:
+                        kodiutils.set_setting('non_drm_format', 2)
+                    play_video(video_id, channel)
+                else:
+                    setResolvedUrl(plugin.handle, False, playitem)
+
 
 @plugin.route('/category/by_category/<category_id>/')
 def get_by_category(category_id):
@@ -676,7 +793,7 @@ def remove_favorite():
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 
 def get_url(url, headers={}, cache=False, critical=False):
-    #logger.critical(url)
+    log(url)
     new_headers = {}
     new_headers.update(headers)
     if cache == True:
@@ -689,9 +806,9 @@ def get_url(url, headers={}, cache=False, critical=False):
             return ids.get_livestream_config_cache(url)
         failure = str(e)
         if hasattr(e, 'code'):
-            logger.critical("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
         elif hasattr(e, 'reason'):
-            logger.critical("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
         if critical:
             kodiutils.notification("ERROR GETTING URL", failure)
             return sys.exit(0)
@@ -764,3 +881,7 @@ def get_channel(json_data, channel):
 
 def run():
     plugin.run()
+
+def log(info):
+    if kodiutils.get_setting_as_bool("debug"):
+        logger.warning(info)

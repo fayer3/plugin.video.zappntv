@@ -70,6 +70,66 @@ msgctxt "#32013"
 msgid "Search for TV Show"
 msgstr ""
 
+msgctxt "#32014"
+msgid "past program"
+msgstr ""
+
+msgctxt "#32015"
+msgid "program from [COLOR chartreuse]{0:s}[/COLOR]"
+msgstr ""
+
+msgctxt "#32016"
+msgid "{0:s}[CR]From [COLOR chartreuse]{1:s}[/COLOR] to [COLOR chartreuse]{2:s}[/COLOR][CR][CR]"
+msgstr ""
+
+msgctxt "#32017"
+msgid "today"
+msgstr ""
+
+msgctxt "#32018"
+msgid "DRM '{0}' is not supported"
+msgstr ""
+
+msgctxt "#32019"
+msgid "DRM content requires 'inputstream.adaptive'"
+msgstr ""
+
+msgctxt "#32020"
+msgid "inputstream.adaptive' is not installed"
+msgstr ""
+
+msgctxt "#32021"
+msgid "'inputstream.adaptive' is failed to install. Would you like to switch to a format that doesn't require that?"
+msgstr ""
+
+msgctxt "#32022"
+msgid "changable in the addon settings '{0}'"
+msgstr ""
+
+msgctxt "#32023"
+msgid "'inputstream.adaptive' version to low"
+msgstr ""
+
+msgctxt "#32024"
+msgid "Version '2.2.2' or greater is required to watch DRM protected content."
+msgstr ""
+
+msgctxt "#32025"
+msgid "DRM content requires Kodi 18.0"
+msgstr ""
+
+msgctxt "#32026"
+msgid "Austria"
+msgstr ""
+
+msgctxt "#32027"
+msgid "Germany"
+msgstr ""
+
+msgctxt "#32028"
+msgid "Switzerland"
+msgstr ""
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -104,4 +164,24 @@ msgstr ""
 
 msgctxt "#32109"
 msgid "Other methods to choose from"
+msgstr ""
+
+msgctxt "#32110"
+msgid "Video format to use for non DRM content"
+msgstr ""
+
+msgctxt "#32111"
+msgid "dash (with inputstream.adaptive)"
+msgstr ""
+
+msgctxt "#32112"
+msgid "hls (with inputstream.adaptive)"
+msgstr ""
+
+msgctxt "#32113"
+msgid "hls"
+msgstr ""
+
+msgctxt "#32114"
+msgid "video (lower quality)"
 msgstr ""
