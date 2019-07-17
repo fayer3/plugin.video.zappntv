@@ -31,3 +31,5 @@ v1.1.0
 - get season and episode number of video from title
 - add option to remove season and episode number from title
 - add thumbnail as poster image for videos
+v1.1.1
+no changes in functionallity
