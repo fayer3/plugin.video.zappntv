@@ -23,8 +23,8 @@ msgid "Search"
 msgstr "Suchen"
 
 msgctxt "#32002"
-msgid "Favorites"
-msgstr "Favoriten"
+msgid "ZAPPN-Favorites"
+msgstr "ZAPPN-Favoriten"
 
 msgctxt "#32003"
 msgid "Settings"
@@ -47,12 +47,12 @@ msgid "Page {0:s}"
 msgstr "Seite {0:s}"
 
 msgctxt "#32008"
-msgid "Add to Favorites"
-msgstr "zu Favoriten hinzufügen"
+msgid "[COLOR chartreuse]Add to ZAPPN-Favorites[/COLOR]"
+msgstr "[COLOR chartreuse]zu ZAPPN-Favoriten hinzufügen[/COLOR]"
 
 msgctxt "#32009"
-msgid "Remove from Favorites"
-msgstr "aus Favoriten entfernen"
+msgid "[COLOR orange]Remove from ZAPPN-Favorites[/COLOR]"
+msgstr "[COLOR orange]aus ZAPPN-Favoriten entfernen[/COLOR]"
 
 msgctxt "#32010"
 msgid "SUCCESSFULL :"

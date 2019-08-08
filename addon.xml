@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zappntv" name="Zappn TV" version="1.1.1" provider-name="fayer3">
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.2.0" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -8,6 +8,7 @@
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.library" library="favorite.py"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="de_DE">ZAPPN TV Levestream und Mediathek</summary>
         <description lang="de_DE">Livestream von den Österreichischen Sendern ORF 1, ORF 2, Puls 4, Puls 24, ATV, ATV2, ProSieben, Sat.1, Kabel 1, Sixx, Prosieben Maxx, Sat.1 GOLD und Kabel 1 Doku sowie Mediathek von Puls 4, ATV, Kabel 1, Sat.1, Sixx, Prosieben, Prosieben Maxx, Sat.1 Gold und Kabel 1 Doku.</description>
@@ -22,20 +23,8 @@
         <website>https://zappn.tv/</website>
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
-        <news>- Vollständiges TV Programm Hinzugefügt
-- Kodi Versions check für DRM Hinzugefügt
-  - DRM Inhalt kann nur mit Kodi Version > 18.0 und inputstream.adaptive > 2.2.2 wiedergegeben werden
-- support für wiedergabe ohne inputstream.adaptive
-  - Auswahl zwischen folgenden Formaten:
-    - dash (mit inputstream.adaptive)
-    - hls (mit inputstream.adaptive)
-    - hls
-    - video (niedrigere Qualität)
-- Abhängigkeit von inputstream.adaptive entfernt, wird jetzt vor der Wiedergabe installiert
-- Fehlschlag von Wiedergabe repariert, Wiedergabe geschieht nun nur einmal
-- extrahieren von Staffel- und Folgennummer aus Videotitle
-- Option zum entfernen der Staffel- und Folgennummer aus dem Videotitel
-- benutze thumbnail als poster Bild</news>
+        <news>- Möglichkeit hinzugefügt, Serien über Rechtsklick zu favoriten hinzuzufügen
+- Suche auf Betriebsystemen mit Multiprozess unterstützung beschleunigt (alles außer Android)</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

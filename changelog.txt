@@ -33,3 +33,6 @@ v1.1.0
 - add thumbnail as poster image for videos
 v1.1.1
 no changes in functionallity
+v1.2.0
+- added option to add/remove favorites from the rightclick menu
+- speed up search on operating systems with multiprocess support (everything except Android)

@@ -36,6 +36,12 @@ except ImportError:
     from urllib import quote, unquote
     from urllib2 import Request, urlopen, HTTPError
 
+try:
+    from multiprocessing.pool import ThreadPool
+    multiprocess = True
+except ImportError:
+    multiprocess = False
+
 import locale
 import time
 from datetime import date, datetime, timedelta
@@ -239,6 +245,7 @@ def show_category(category_id):
         for item in favorites:
             listitem = ListItem(favorites[item]["name"])
             listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'poster':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
+            add_favorites_context_menu(listitem, item, favorites[item]['name'], favorites[item]['icon'], favorites[item]['fanart'])
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
     elif category_id == "tvprogramm":
@@ -348,10 +355,22 @@ def show_search():
         search_id = ids.search_id
         channels = json.loads(get_url(ids.categories_request_url.format(id=search_id), critical=True))
         shows = {}
+        if multiprocess:
+            threads = []
+            pool = ThreadPool(processes=len(channels["category"]["children"]))
         for channel in channels["category"]["children"]:
-            channel_shows = json.loads(get_url(ids.categories_request_url.format(id=channel["id"]), critical=True))
-            for show in channel_shows["category"]["children"]:
-                shows.update({show["name"]+" | "+show["top_level_category"]["name"] : show})
+            if multiprocess:
+                thread = pool.apply_async(search_channel, [channel["id"]])
+                thread.name = channel["id"]
+                thread.daemon = True
+                threads.append(thread)
+            else:
+                shows.update(search_channel(channel["id"]))
+        if multiprocess:
+            for thread in threads:
+                shows.update(thread.get())
+                pool.close()
+                pool.join()
         result = {}
         for show in shows.keys():
             if query.lower() in show.lower():
@@ -367,9 +386,17 @@ def show_search():
                     fanart = images["image_show_big"]
             listitem = ListItem(result[show]["name"]+" | "+result[show]["top_level_category"]["name"])
             listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'fanart' : fanart})
+            add_favorites_context_menu(listitem, plugin.url_for(get_by_category, result[show]["id"]), result[show]["name"], icon, fanart)
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, result[show]["id"]),
                 listitem=listitem, isFolder=True)
     endOfDirectory(plugin.handle)
+
+def search_channel(channel_id):
+    shows = {}
+    channel_shows = json.loads(get_url(ids.categories_request_url.format(id=channel_id), critical=True))
+    for show in channel_shows["category"]["children"]:
+        shows.update({show["name"]+" | "+show["top_level_category"]["name"] : show})
+    return shows
 
 @plugin.route('/category/livestream/<livestream_id>')
 def play_livestream(livestream_id):
@@ -595,10 +622,12 @@ def play_video(video_id, channel):
 
 @plugin.route('/category/by_category/<category_id>/')
 def get_by_category(category_id):
-    dir = get_url(ids.categories_request_url.format(id=category_id), critical=True)
-    dir_json = json.loads(dir)
+    dir = get_url(ids.categories_request_url.format(id=category_id), critical=False)
+    dir_json = {}
+    if dir:
+        dir_json = json.loads(dir)
     special = ['ganze folgen', 'clips', 'bonus']
-    if "children" in dir_json["category"]:
+    if dir_json and "children" in dir_json["category"]:
         setContent(plugin.handle, 'tvshows')
         icon = ""
         fanart = ""
@@ -632,11 +661,12 @@ def get_by_category(category_id):
                     plot = kodiutils.get_string(32006).format(str(lastTIMES))
                 except: pass
             listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
+            add_favorites_context_menu(listitem, plugin.url_for(get_by_category, child["id"]), name, icon_child, fanart_child)
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, child["id"]),
                 listitem=listitem, isFolder=True)
         add_favorites_folder(plugin.url_for(get_by_category, dir_json["category"]["id"]),
             dir_json["category"]["name"], icon, fanart)
-    if "vod_items" in dir_json["category"]:
+    if dir_json and "vod_items" in dir_json["category"]:
         if kodiutils.get_setting("sort") == "1":
             xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_UNSORTED)
             xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
@@ -680,6 +710,9 @@ def get_by_category(category_id):
             listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
             addDirectoryItem(plugin.handle, url=plugin.url_for(play_video, vod["external_id"], vod["top_level_category"]["name"]),
                 listitem=listitem)
+    if not dir_json:
+        add_favorites_folder(plugin.url_for(get_by_category, category_id),
+            'no name', '', '')
     endOfDirectory(plugin.handle)
 
 def utc_to_local(dt):
@@ -708,7 +741,9 @@ def add_directories(id, page = "1", recursive=False, prefix=""):
                     name = item["promotion_name"]
             listitem = ListItem(name)
             listitem.setArt({'icon': images["image_base"],'thumb': images["image_base"], 'poster': images["image_base"]})
+            fanart = ""
             if "image_show_big" in images:
+                fanart = images["image_show_big"]
                 listitem.setArt({"fanart" : images["image_show_big"]})
             plot = ""
             if 'description' in item and item['description'] != None:
@@ -719,6 +754,7 @@ def add_directories(id, page = "1", recursive=False, prefix=""):
                     plot = kodiutils.get_string(32006).format(str(lastTIMES))
                 except: pass
             listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
+            add_favorites_context_menu(listitem, plugin.url_for(get_by_category, item["id"]), name, images["image_base"], fanart)
             addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, item["id"]),
                 listitem=listitem, isFolder=True)
         elif item["type"] == "Collection":
@@ -754,6 +790,23 @@ def add_favorites_folder(path, name, icon, fanart):
         # remove favorites
         addDirectoryItem(plugin.handle, url=plugin.url_for(remove_favorite, query=quote(codecs.encode(path, 'UTF-8'))),
             listitem=ListItem(kodiutils.get_string(32009)))
+
+def add_favorites_context_menu(listitem, path, name, icon, fanart):
+    global favorites
+    if not favorites and xbmcvfs.exists(favorites_file_path):
+        favorites_file = xbmcvfs.File(favorites_file_path)
+        favorites = json.load(favorites_file)
+        favorites_file.close()
+
+    if not favorites or path not in favorites:
+        # add favorites
+        listitem.addContextMenuItems([(kodiutils.get_string(32008), 'RunScript('+ADDON.getAddonInfo('id')+
+            ',add,' + quote(codecs.encode(path, 'UTF-8')) + ',' + quote(codecs.encode(name, 'UTF-8')) +
+            ',' + quote(codecs.encode(icon, 'UTF-8')) + ',' + quote(codecs.encode(fanart, 'UTF-8')) + ')')])
+    else:
+        # remove favorites
+        listitem.addContextMenuItems([(kodiutils.get_string(32009), 'RunScript('+ADDON.getAddonInfo('id') + ',remove,'+ quote(codecs.encode(path, 'UTF-8'))+')')])
+    return listitem
 
 @plugin.route('/add_fav/')
 def add_favorite():
