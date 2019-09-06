@@ -811,14 +811,34 @@ def add_favorites_context_menu(listitem, path, name, icon, fanart):
 @plugin.route('/add_fav')
 def add_favorite():
     #data = plugin.args['query'][0].split('***')
-    path = unquote(plugin.args['path'][0])
-    name = unquote(plugin.args['name'][0])
+    path = plugin.args['path'][0]
+    name = plugin.args['name'][0]
     icon = ""
     if 'icon' in plugin.args:
-        icon = unquote(plugin.args['icon'][0])
+        icon = plugin.args['icon'][0]
     fanart = ""
     if 'fanart' in plugin.args:
-        fanart = unquote(plugin.args['fanart'][0])
+        fanart = plugin.args['fanart'][0]
+        
+    if sys.version_info[0] < 3:
+        # decode utf-8
+        path = path.encode('ascii')
+        name = name.encode('ascii')
+        icon = icon.encode('ascii')
+        fanart = fanart.encode('ascii')
+    
+    path = unquote(path)
+    name = unquote(name)
+    icon = unquote(icon)
+    fanart = unquote(fanart)
+    
+    if sys.version_info[0] < 3:
+        # decode utf-8
+        path = path.decode('utf-8')
+        name = name.decode('utf-8')
+        icon = icon.decode('utf-8')
+        fanart = fanart.decode('utf-8')
+    
     # load favorites
     global favorites
     if not favorites and xbmcvfs.exists(favorites_file_path):
@@ -833,10 +853,8 @@ def add_favorite():
     json.dump(favorites, favorites_file, indent=2)
     favorites_file.close()
 
-    try:
-        kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(codecs.decode(name, 'utf-8')))
-    except TypeError:
-        kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(codecs.decode(bytes(name, 'utf-8'), 'utf-8')))
+    
+    kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(name))
     xbmc.executebuiltin('Container.Refresh')
     setResolvedUrl(plugin.handle, True, ListItem("none"))
 

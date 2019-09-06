@@ -38,3 +38,5 @@ v1.2.0
 - speed up search on operating systems with multiprocess support (everything except Android)
 v1.2.2:
 - adapt paths to new plugin routing addon, sadly ruins old saved favourites, the need to be newly added.
+v1.2.3:
+- fixed adding favourites
