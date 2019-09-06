@@ -36,3 +36,5 @@ no changes in functionallity
 v1.2.0
 - added option to add/remove favorites from the rightclick menu
 - speed up search on operating systems with multiprocess support (everything except Android)
+v1.2.2:
+- adapt paths to new plugin routing addon, sadly ruins old saved favourites, the need to be newly added.

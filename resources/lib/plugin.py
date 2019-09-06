@@ -270,7 +270,7 @@ def show_category(category_id):
         addDirectoryItem(plugin.handle, "", ListItem(kodiutils.get_string(32004)), False)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/category/epg/id=<channel_id>/')
+@plugin.route('/category/epg/id=<channel_id>')
 def show_epg(channel_id):
     icon = ""
     if 'icon' in plugin.args:
@@ -291,7 +291,7 @@ def show_epg(channel_id):
             ListItem(kodiutils.get_string(32015).format(future_date.strftime("%d.%m.%Y"))), True)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/category/epg/id=<channel_id>/past/')
+@plugin.route('/category/epg/id=<channel_id>/past')
 def show_epg_past(channel_id):
     icon = ""
     if 'icon' in plugin.args:
@@ -308,7 +308,7 @@ def show_epg_past(channel_id):
 
 
 
-@plugin.route('/category/epg/id=<channel_id>/date=<date>/')
+@plugin.route('/category/epg/id=<channel_id>/date=<date>')
 def show_epg_programm(channel_id, date):
     icon = ""
     if 'icon' in plugin.args:
@@ -343,7 +343,7 @@ def show_epg_programm(channel_id, date):
         addDirectoryItem(plugin.handle, url=None, listitem=listitem)
     endOfDirectory(plugin.handle)
 
-@plugin.route('/category/mediathek/id=<mediathek_id>/')
+@plugin.route('/category/mediathek/id=<mediathek_id>')
 def show_mediathek(mediathek_id):
     get_by_collection(mediathek_id, "1")
     endOfDirectory(plugin.handle)
@@ -620,7 +620,7 @@ def play_video(video_id, channel):
                     setResolvedUrl(plugin.handle, False, playitem)
 
 
-@plugin.route('/category/by_category/<category_id>/')
+@plugin.route('/category/by_category/id=<category_id>')
 def get_by_category(category_id):
     dir = get_url(ids.categories_request_url.format(id=category_id), critical=False)
     dir_json = {}
@@ -719,7 +719,7 @@ def utc_to_local(dt):
     if time.localtime().tm_isdst: return dt - timedelta(seconds=time.altzone)
     else: return dt - timedelta(seconds=time.timezone)
 
-@plugin.route('/category/by_collection/<collection_id>/page=<page>/')
+@plugin.route('/category/by_collection/id=<collection_id>/page=<page>')
 def get_by_collection(collection_id, page):
     recursive = False
     if 'recursive' in plugin.args:
@@ -808,7 +808,7 @@ def add_favorites_context_menu(listitem, path, name, icon, fanart):
         listitem.addContextMenuItems([(kodiutils.get_string(32009), 'RunScript('+ADDON.getAddonInfo('id') + ',remove,'+ quote(codecs.encode(path, 'UTF-8'))+')')])
     return listitem
 
-@plugin.route('/add_fav/')
+@plugin.route('/add_fav')
 def add_favorite():
     #data = plugin.args['query'][0].split('***')
     path = unquote(plugin.args['path'][0])
