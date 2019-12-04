@@ -157,13 +157,27 @@ def show_category(category_id):
             play_livestream, "puls4_at"), get_listitem(name="PULS 4", channel=channel, no_puls4=False))
         channel = get_channel(json_data, "Popup")
         addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "popuptv"), get_listitem(name="Popup TV", channel=channel, no_puls4=False))
+            play_livestream, "popuptv"), get_listitem(name="Puls 24", channel=channel, no_puls4=False))
         channel = get_channel(json_data, "ATV")
         addDirectoryItem(plugin.handle, plugin.url_for(
             play_livestream, "atv"), get_listitem(name="ATV", channel=channel))
         channel = get_channel(json_data, "ATV2")
         addDirectoryItem(plugin.handle, plugin.url_for(
             play_livestream, "atv2"), get_listitem(name="ATV 2", channel=channel))
+        channel = get_channel(json_data, "servustv")
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            play_livestream, "servustv"), get_listitem(name="Servus TV Österreich", channel=channel))
+        channel = get_channel(json_data, "schautv")
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            play_livestream, "schautv"), get_listitem(name="SchauTV", channel=channel))
+        channel = get_channel(json_data, "ric")
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            play_livestream, "ric"), get_listitem(name="RIC", channel=channel))
+        channel = get_channel(json_data, "popuptv")
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            play_livestream, "popuptv2"), get_listitem(name="CineplexxTV", channel=channel))
+        addDirectoryItem(plugin.handle, plugin.url_for(
+            play_livestream, "kronehittv"), get_listitem(name="Kronehit TV"))
         addDirectoryItem(plugin.handle, plugin.url_for(
             show_category, "austria"), ListItem(kodiutils.get_string(32026)), True)
         addDirectoryItem(plugin.handle, plugin.url_for(
@@ -884,7 +898,9 @@ def get_url(url, headers={}, cache=False, critical=False):
     new_headers = {}
     new_headers.update(headers)
     if cache == True:
-        new_headers.update({"If-None-Match": ids.get_livestream_config_tag(url)})
+        cache_tag = ids.get_livestream_config_tag(url)
+        if cache_tag != None:
+            new_headers.update({"If-None-Match": cache_tag})
     new_headers.update({"User-Agent":"okhttp/3.10.0", "Accept-Encoding":"gzip"})
     try:
         request = urlopen(Request(url, headers=new_headers))
@@ -933,7 +949,10 @@ def get_video_source_request_token(access_token="", client_location="", client_n
 
 def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
     if channel:
-        listitem = ListItem(channel["name"])
+        if name:
+            listitem = ListItem(name)
+        else:
+            listitem = ListItem(channel["name"])
         listitem.setProperty('IsPlayable', 'true')
         if no_puls4:
             listitem.setLabel(listitem.getLabel().replace("Puls4 ", ""))
@@ -945,7 +964,7 @@ def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
                 listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"], 'poster':images["icon_1"]})
         if "next_program" in channel:
             #'Title': channel["name"]
-            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+channel["next_program"]["description"], 'mediatype': 'video'})
+            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+(channel["next_program"]["description"] if channel["next_program"]["description"] != None else ""), 'mediatype': 'video'})
             program_images = json.loads(channel["next_program"]["images_json"])
             if program_images:
                 listitem.setArt({'fanart' : program_images["image_base"]})

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zappntv" name="Zappn TV" version="1.2.3" provider-name="fayer3">
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.2.4" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -28,7 +28,10 @@
 1.2.2:
 - pfade für neue plugin routing addon angepasst, zerstört leider alte gespeicherte Favoriten, diese müssen neu hinzugefügt werden.
 1.2.3:
-- hinzufügen von favoriten repariert.</news>
+- hinzufügen von favoriten repariert.
+1.2.4:
+- Neue Sender Hinzugefügt.
+- Abspielen von livestreams mit Python3 repariert.</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

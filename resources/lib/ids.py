@@ -42,6 +42,11 @@ live_channel_ids = {
     "tlc_de": "tlc-de-24x7",
     "popuptv": "popuptv-24x7", # puls24
     "puls4_at": "puls4-24x7",
+    "servustv": "servustv-at",
+    "schautv": "schautv-at-hd",
+    "ric": "ric-at",
+    "kronehittv": "kronehittv-at",
+    "popuptv2": "popuptv2",
     "orf1": "orf1-at",
     "orf2": "orf2-at",
     "atv": "atv-24x7",
@@ -106,9 +111,16 @@ config_cache = {}
 config_tag = {}
 
 def get_livestream_config_url(livestream_id):
-    if livestream_id == "orf1" or livestream_id == "orf2":
+    if livestream_id == "orf1" or livestream_id == "orf2" or livestream_id == "kronehittv":
         return live_config_url+live_config_ids["orf"]
-    elif livestream_id == "atv" or livestream_id == "atv2" or livestream_id == "puls4_at" or livestream_id == "popuptv":
+    elif (livestream_id == "atv" 
+        or livestream_id == "atv2" 
+        or livestream_id == "puls4_at" 
+        or livestream_id == "popuptv" 
+        or livestream_id == "popuptv2" 
+        or livestream_id == "servustv" 
+        or livestream_id == "schautv" 
+        or livestream_id == "ric"):
         return live_config_url+live_config_ids["puls4_and_atv_at"]
     elif "kabeleins" in livestream_id:
         return live_config_url+live_config_ids[livestream_id.replace("kabeleins", "kabel1")]

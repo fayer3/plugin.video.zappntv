@@ -40,3 +40,6 @@ v1.2.2:
 - adapt paths to new plugin routing addon, sadly ruins old saved favourites, the need to be newly added.
 v1.2.3:
 - fixed adding favourites
+v1.2.4:
+- add new channels.
+- fix playback of livestreams with python3.
