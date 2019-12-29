@@ -963,11 +963,14 @@ def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
             else:
                 listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"], 'poster':images["icon_1"]})
         if "next_program" in channel:
-            #'Title': channel["name"]
-            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+(channel["next_program"]["description"] if channel["next_program"]["description"] != None else ""), 'mediatype': 'video'})
-            program_images = json.loads(channel["next_program"]["images_json"])
-            if program_images:
-                listitem.setArt({'fanart' : program_images["image_base"]})
+            if channel["next_program"] != None:
+                #'Title': channel["name"]
+                listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+(channel["next_program"]["description"] if channel["next_program"]["description"] != None else ""), 'mediatype': 'video'})
+                program_images = json.loads(channel["next_program"]["images_json"])
+                if program_images:
+                    listitem.setArt({'fanart' : program_images["image_base"]})
+            else:
+                listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'mediatype': 'video'})
     else:
         listitem = ListItem(name)
         listitem.setProperty('IsPlayable', 'true')

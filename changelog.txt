@@ -43,3 +43,5 @@ v1.2.3:
 v1.2.4:
 - add new channels.
 - fix playback of livestreams with python3.
+v1.2.5:
+- fix livestream category, if a stream has no epg.
