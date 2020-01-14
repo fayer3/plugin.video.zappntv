@@ -12,10 +12,14 @@ from resources.lib import kodilogging
 from resources.lib import ids
 from resources.lib import xxtea
 from xbmcgui import ListItem
-from xbmcplugin import addDirectoryItem, endOfDirectory, setResolvedUrl, setContent
+from xbmcplugin import addDirectoryItem, addDirectoryItems, endOfDirectory, setResolvedUrl, setContent
 from distutils.version import LooseVersion
 
+import pytz
+import tzlocal
+import html2text
 import codecs
+import base64
 
 try:
     import inputstreamhelper
@@ -30,11 +34,12 @@ except ImportError:
 
 try:
     from urllib.request import Request, urlopen
-    from urllib.error import HTTPError
-    from urllib.parse import quote, unquote
+    from urllib.error import HTTPError, URLError
+    from urllib.parse import quote, unquote, urlparse, parse_qs, urlencode
 except ImportError:
-    from urllib import quote, unquote
-    from urllib2 import Request, urlopen, HTTPError
+    from urllib import quote, unquote, urlencode
+    from urllib2 import Request, urlopen, HTTPError, URLError
+    from urlparse import urlparse, parse_qs
 
 try:
     from multiprocessing.pool import ThreadPool
@@ -61,72 +66,83 @@ __profile__ = xbmc.translatePath(ADDON.getAddonInfo('profile'))
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)
 
-favorites_file_path = __profile__+"favorites.json"
+favorites_file_path = __profile__+'favorites.json'
 favorites = {}
 
-icon_path = ADDON.getAddonInfo('path')+"/resources/logos/{0}.png"
+icon_path = ADDON.getAddonInfo('path')+'/resources/logos/{0}.png'
 
 setContent(plugin.handle, '')
 
 @plugin.route('/')
 def index():
-    icon = get_url(ids.collections_request_url.format(id=ids.icon_id, page="1"))
-    live_icon = ""
-    highlights_icon = ""
-    highlights_id = ids.highlights_id
-    mediathek_icon = ""
-    mediathek_id = ids.mediathek_id
-    tv_programm_icon = ""
-    tv_programm_id = ids.tv_programm_id
-    if icon != "":
+    icon = get_url(ids.overview_url)
+    live_icon = ''
+    highlights_icon = ''
+    mediathek_icon = ''
+    tv_programm_icon = ''
+    search_icon = ''
+    search_query = ids.search_query
+    settings_icon = ''
+    if icon != '':
         icon_json = json.loads(icon)
-        for element in icon_json["results"]:
-            if element["promotion_name"] == "Live":
-                image_json = json.loads(element["images_json"])
-                live_icon = image_json["menu_icon"]
-            elif element["promotion_name"] == "Highlights":
-                image_json = json.loads(element["images_json"])
-                highlights_icon = image_json["menu_icon"]
-                highlights_id = element["id"]
-            elif element["promotion_name"] == "Mediathek":
-                image_json = json.loads(element["images_json"])
-                mediathek_icon = image_json["menu_icon"]
-                mediathek_id = element["id"]
-            elif element["promotion_name"] == "TV Programm":
-                image_json = json.loads(element["images_json"])
-                tv_programm_icon = image_json["menu_icon"]
+        for element in icon_json:
+            if u'navigations' in element and element['navigations'] != None and len(element['navigations']) > 0:
+                for bar in element['navigations']:
+                    if 'navigation_type' in bar and bar['navigation_type'] == 'bottom_tab_bar' and 'nav_items' in bar:
+                        for icons in bar['nav_items']:
+                            if icons['title'] == 'Live' and 'assets' in icons and 'icon' in icons['assets']:
+                                live_icon = icons['assets']['icon']
+                            if icons['title'] == 'Highlights' and 'assets' in icons and 'icon' in icons['assets']:
+                                highlights_icon = icons['assets']['icon']
+                            if icons['title'] == 'Mediathek' and 'assets' in icons and 'icon' in icons['assets']:
+                                live_icon = icons['assets']['icon']
+                            if icons['title'] == 'mediathek_icon' and 'assets' in icons and 'icon' in icons['assets']:
+                                live_icon = icons['assets']['icon']
+                            if icons['title'] == 'TV Programm' and 'assets' in icons and 'icon' in icons['assets']:
+                                tv_programm_icon = icons['assets']['icon']
+                    if 'navigation_type' in bar and bar['navigation_type'] == 'navigation_bar' and 'nav_items' in bar:
+                        for icons in bar['nav_items']:
+                            if icons['title'] == 'Search' and 'assets' in icons and 'icon' in icons['assets']:
+                                search_icon = icons['assets']['icon']
+                                if 'data' in icons and 'source' in icons['data'] and icons['data']['source'] != None:
+                                    qs = get_query(icons['data']['source'])
+                                    if 'reactProps[baseSearchUrl]' in qs:
+                                        search_query = get_query(base64.b64decode(qs['reactProps[baseSearchUrl]'][0]).decode('UTF-8'))
+                            if icons['title'] == 'Settings' and 'assets' in icons and 'icon' in icons['assets']:
+                                settings_icon = icons['assets']['icon']
     else:
-        kodiutils.notification("ERROR getting URL", "using saved values")
-    icon_search = get_url(ids.collections_request_url.format(id=ids.search_icon_id, page="1"))
-    search_icon = ""
-    settings_icon = ""
-    if icon_search != "":
-        icon_search_json = json.loads(icon_search)
-        for item in icon_search_json["results"]:
-            images = json.loads(item["images_json"])
-            if item["name"] == "Search":
-                if "navbar_icon" in images:
-                    search_icon = images["navbar_icon"]
-            elif item["name"] == "Service":
-                if "navbar_icon" in images:
-                    settings_icon = images["navbar_icon"]
-    else:
-        kodiutils.notification("ERROR getting URL", "using saved values")
+        kodiutils.notification('ERROR getting URL', 'using saved values')
+    listitem = ListItem('Live')
+    listitem.setArt({'icon': live_icon, 'thumb': live_icon, 'poster': live_icon})
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_category, "livestream"), ListItem("Live", iconImage=live_icon, thumbnailImage=live_icon), True)
+        show_category, 'livestream'), listitem, True)
+    listitem = ListItem('Highlights')
+    listitem.setArt({'icon': highlights_icon, 'thumb': highlights_icon, 'poster': highlights_icon})
     addDirectoryItem(plugin.handle, plugin.url_for(
-        get_by_collection, collection_id=highlights_id, page="1", recursive="True"), ListItem("Highlights", iconImage=highlights_icon, thumbnailImage=highlights_icon), True)
+        show_category, 'highlights'), listitem, True)
+    listitem = ListItem('Mediathek')
+    listitem.setArt({'icon': mediathek_icon, 'thumb': mediathek_icon, 'poster': mediathek_icon})
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_mediathek, mediathek_id), ListItem("Mediathek", iconImage=mediathek_icon, thumbnailImage=mediathek_icon), True)
+        show_category, 'mediathek'), listitem, True)
+    listitem = ListItem('TV Programm')
+    listitem.setArt({'icon': tv_programm_icon, 'thumb': tv_programm_icon, 'poster': tv_programm_icon})
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_category, "tvprogramm"), ListItem("TV Programm", iconImage=tv_programm_icon, thumbnailImage=tv_programm_icon), True)
+        show_category, 'tvprogramm'), listitem, True)
+    listitem = ListItem(kodiutils.get_string(32001))
+    listitem.setArt({'icon': search_icon, 'thumb': search_icon, 'poster': search_icon})
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_search), ListItem(kodiutils.get_string(32001), iconImage=search_icon, thumbnailImage=search_icon), True)
+        show_search, json.dumps(search_query)), listitem, True)
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_category, "favorites"), ListItem(kodiutils.get_string(32002)), True)
+        show_category, 'favorites'), ListItem(kodiutils.get_string(32002)), True)
+    listitem = ListItem(kodiutils.get_string(32003))
+    listitem.setArt({'icon': settings_icon, 'thumb': settings_icon, 'poster': settings_icon})
     addDirectoryItem(plugin.handle, plugin.url_for(
-        open_settings), ListItem(kodiutils.get_string(32003), iconImage=settings_icon, thumbnailImage=settings_icon))
+        open_settings), listitem)
     endOfDirectory(plugin.handle)
+
+@plugin.route('/info')
+def show_info():
+    xbmc.executebuiltin('Action(Info)')
 
 @plugin.route('/settings')
 def open_settings():
@@ -135,158 +151,97 @@ def open_settings():
 @plugin.route('/category/<category_id>')
 def show_category(category_id):
     #setContent(plugin.handle, 'albums')
-    if category_id == "livestream":
-        channels = get_url(ids.overview_url)
-        json_data = {}
-        if channels != "":
-            json_data = json.loads(channels)
+    if category_id == 'livestream':
+        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+        result = get_url(ids.api_brands_url, headers = ids.api_headers)
+        if result:
+            channels = json.loads(result)
+            streams = []
+            if multiprocess:
+                threads = []
+                pool = ThreadPool(processes=len(channels['response']['data']))
+                for brand in channels['response']['data']:
+                        thread = pool.apply_async(get_livestream, (brand['channelId'], brand['title'], brand['id']))
+                        thread.name = brand['channelId']
+                        thread.daemon = True
+                        threads.append(thread)
+                for thread in threads:
+                    streams.append(thread.get())
+                    pool.close()
+                    pool.join()
+            else:
+                for brand in channels['response']['data']:
+                    streams.update(get_livestream(brand['channelId'], brand['title'], brand['id']))
+            addDirectoryItems(plugin.handle, streams)
         else:
-            kodiutils.notification("ERROR GETTING LIVESTREAM INFO", "using saved values")
-        # current = ListItem("ORF 1")
-        # current.setInfo(type="Video")
-        # current.setProperty('IsPlayable', 'true')
-        # orf1
-        channel = get_channel(json_data, "orf1")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "orf1"), listitem=get_listitem(name="ORF 1", channel=channel))
-        channel = get_channel(json_data, "orf2")
+            kodiutils.notification('ERROR GETTING LIVESTREAM INFO', 'using saved values')
+            add_default_streams()
         addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "orf2"), get_listitem(name="ORF 2", channel=channel))
-        channel = get_channel(json_data, "Puls4")
+            show_category, 'germany'), ListItem(kodiutils.get_string(32027)), True)
         addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "puls4_at"), get_listitem(name="PULS 4", channel=channel, no_puls4=False))
-        channel = get_channel(json_data, "Popup")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "popuptv"), get_listitem(name="Puls 24", channel=channel, no_puls4=False))
-        channel = get_channel(json_data, "ATV")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "atv"), get_listitem(name="ATV", channel=channel))
-        channel = get_channel(json_data, "ATV2")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "atv2"), get_listitem(name="ATV 2", channel=channel))
-        channel = get_channel(json_data, "servustv")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "servustv"), get_listitem(name="Servus TV Österreich", channel=channel))
-        channel = get_channel(json_data, "schautv")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "schautv"), get_listitem(name="SchauTV", channel=channel))
-        channel = get_channel(json_data, "ric")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "ric"), get_listitem(name="RIC", channel=channel))
-        channel = get_channel(json_data, "popuptv")
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "popuptv2"), get_listitem(name="CineplexxTV", channel=channel))
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            play_livestream, "kronehittv"), get_listitem(name="Kronehit TV"))
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            show_category, "austria"), ListItem(kodiutils.get_string(32026)), True)
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            show_category, "germany"), ListItem(kodiutils.get_string(32027)), True)
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            show_category, "switzerland"), ListItem(kodiutils.get_string(32028)), True)
-    elif category_id == "austria":
-        channels = get_url(ids.overview_url)
-        json_data = {}
-        if channels != "":
-            json_data = json.loads(channels)
+            show_category, 'switzerland'), ListItem(kodiutils.get_string(32028)), True)
+    elif category_id == 'germany' or category_id == 'switzerland':
+        if category_id == 'germany':
+            id = '_de'
+            name = ' DE'
         else:
-            kodiutils.notification("ERROR GETTING LIVESTREAM INFO", "using saved values")
-        channel = get_channel(json_data, "kabel eins")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "kabeleins_at"), listitem=get_listitem(name="Kabel eins AT", channel=channel))
-        channel = get_channel(json_data, "Kabel1Doku")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "kabeleinsdoku_at"), listitem=get_listitem(name="Kabel1Doku AT", channel=channel))
-        channel = get_channel(json_data, "ProSieben")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "prosieben_at"), listitem=get_listitem(name="ProSieben AT", channel=channel))
-        channel = get_channel(json_data, "ProSiebenMaxx")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "prosiebenmaxx_at"), listitem=get_listitem(name="ProSiebenMaxx AT", channel=channel))
-        channel = get_channel(json_data, "SAT.1")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sat1_at"), listitem=get_listitem(name="SAT.1 AT", channel=channel))
-        channel = get_channel(json_data, "SAT.1 Gold")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sat1gold_at"), listitem=get_listitem(name="SAT.1 Gold AT", channel=channel))
-        channel = get_channel(json_data, "Sixx")
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sixx_at"), listitem=get_listitem(name="Sixx AT", channel=channel))
-    elif category_id == "germany" or category_id == "switzerland":
-        if category_id == "germany":
-            id = "_de"
-            name = " DE"
-        else:
-            id = "_ch"
-            name = " CH"
-        listitem = get_listitem(name="Kabel eins"+name)
-        listitem.setArt({'icon': icon_path.format("kabeleins"), 'thumb': icon_path.format("kabeleins"), 'poster': icon_path.format("kabeleins")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "kabeleins"+id), listitem=listitem)
-        listitem = get_listitem(name="Kabel1Doku"+name)
-        listitem.setArt({'icon': icon_path.format("kabeleinsdoku"), 'thumb': icon_path.format("kabeleinsdoku"), 'poster': icon_path.format("kabeleinsdoku")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "kabeleinsdoku"+id), listitem=listitem)
-        listitem = get_listitem(name="ProSieben"+name)
-        listitem.setArt({'icon': icon_path.format("prosieben"), 'thumb': icon_path.format("prosieben"), 'poster': icon_path.format("prosieben")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "prosieben"+id), listitem=listitem)
-        listitem = get_listitem(name="ProSiebenMaxx"+name)
-        listitem.setArt({'icon': icon_path.format("prosiebenmaxx"), 'thumb': icon_path.format("prosiebenmaxx"), 'poster': icon_path.format("prosiebenmaxx")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "prosiebenmaxx"+id), listitem=listitem)
-        listitem = get_listitem(name="SAT.1"+name)
-        listitem.setArt({'icon': icon_path.format("sat1"), 'thumb': icon_path.format("sat1"), 'poster': icon_path.format("sat1")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sat1"+id), listitem=listitem)
-        listitem = get_listitem(name="SAT.1 Gold"+name)
-        listitem.setArt({'icon': icon_path.format("sat1gold"), 'thumb': icon_path.format("sat1gold"), 'poster': icon_path.format("sat1gold")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sat1gold"+id), listitem=listitem)
-        listitem = get_listitem(name="Sixx"+name)
-        listitem.setArt({'icon': icon_path.format("sixx"), 'thumb': icon_path.format("sixx"), 'poster': icon_path.format("sixx")})
-        addDirectoryItem(plugin.handle, url=plugin.url_for(
-            play_livestream, "sixx"+id), listitem=listitem)
+            id = '_ch'
+            name = ' CH'
+        for stream in ids.streams_pro7sat1:
+            addDirectoryItem(plugin.handle, url=plugin.url_for(
+                play_livestream, stream[0]+id), listitem=get_listitem(stream[1]+name, icon = icon_path.format(stream[0])))
 
-    elif category_id == "favorites":
+    elif category_id == 'favorites':
         xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
         global favorites
         if not favorites and xbmcvfs.exists(favorites_file_path):
             favorites_file = xbmcvfs.File(favorites_file_path)
             favorites = json.load(favorites_file)
             favorites_file.close()
-
         for item in favorites:
-            listitem = ListItem(favorites[item]["name"])
-            listitem.setArt({'icon': favorites[item]["icon"], 'thumb':favorites[item]["icon"], 'poster':favorites[item]["icon"], 'fanart' : favorites[item]["fanart"]})
+            legacy=''
+            if 'by_category' in item:
+                legacy = ' | legacy'
+            listitem = ListItem(favorites[item]['name']+legacy)
+            listitem.setArt({'icon': favorites[item]['icon'], 'thumb':favorites[item]['icon'], 'poster':favorites[item]['icon'], 'fanart' : favorites[item]['fanart']})
             add_favorites_context_menu(listitem, item, favorites[item]['name'], favorites[item]['icon'], favorites[item]['fanart'])
             addDirectoryItem(plugin.handle, url=item,
                 listitem=listitem, isFolder=True)
-    elif category_id == "tvprogramm":
-        channels = get_url(ids.collections_request_url.format(id=ids.epg_id, page = "1"), critical=True)
-        channels_json = json.loads(channels)
-        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
-        for channel in channels_json["results"]:
-            listitem = ListItem(channel["name"])
-            if listitem.getLabel() != "Puls4 TV":
-                listitem.setLabel(listitem.getLabel().replace("Puls4 ", ""))
-            images = json.loads(channel["images_json"])
-            icon = ""
-            if "image_base" in images and images["image_base"]:
-                icon = images["image_base"]
-            else:
-                icon = images["icon_1"]
-            listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
-            addDirectoryItem(plugin.handle, url=plugin.url_for(
-                show_epg, channel_id=channel["id"], icon=quote(icon)), listitem=listitem, isFolder=True)
-
+    elif category_id == 'tvprogramm':
+        channels = get_url(ids.api_brands_url, headers = ids.api_headers)
+        if channels:
+            channels_json = json.loads(channels)
+            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+            for channel in channels_json['response']['data']:
+                listitem = ListItem(channel['title'])
+                icon = get_channel_icon(channel['channelId'])
+                listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
+                addDirectoryItem(plugin.handle, url=plugin.url_for(
+                    show_epg, channel_id=channel['channelId'], icon=quote(icon)), listitem=listitem, isFolder=True)
+    elif category_id == 'mediathek':
+        addDirectoryItem(plugin.handle, url=plugin.url_for(
+            show_mediathek_popular), listitem=ListItem(kodiutils.get_string(32034)), isFolder=True)
+        addDirectoryItem(plugin.handle, url=plugin.url_for(
+            show_mediathek_genre), listitem=ListItem(kodiutils.get_string(32035)), isFolder=True)
+        addDirectoryItem(plugin.handle, url=plugin.url_for(
+            show_mediathek_channel), listitem=ListItem(kodiutils.get_string(32036)), isFolder=True)
+    elif category_id == 'genres':
+        genres = get_url(ids.api_genres_url, headers = ids.api_headers)
+        if genres:
+            genres = json.loads(genres)
+            for genre in genres['response']['data']:
+                addDirectoryItem(plugin.handle, url=plugin.url_for(
+                    show_a_z, ids.api_tvshows_genre_query.format(genres=genre['id'])), listitem=ListItem(genre['title']), isFolder=True)
+    elif category_id == 'highlights':
+        add_tvshows('', sub_page = ids.api_highlights_url, limit = 100)
+        endOfDirectory(plugin.handle)
     else:
-        addDirectoryItem(plugin.handle, "", ListItem(kodiutils.get_string(32004)), False)
+        addDirectoryItem(plugin.handle, '', ListItem(kodiutils.get_string(32004)), False)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/category/epg/id=<channel_id>')
 def show_epg(channel_id):
-    icon = ""
+    icon = ''
     if 'icon' in plugin.args:
         icon = plugin.args['icon'][0]
     today = date.today()
@@ -295,156 +250,453 @@ def show_epg(channel_id):
         show_epg_past, channel_id=channel_id, icon=icon), ListItem(kodiutils.get_string(32014)), True)
     # show epg from today
     addDirectoryItem(plugin.handle, plugin.url_for(
-        show_epg_programm, channel_id=channel_id, date=today.strftime("%Y%m%d"), icon=icon),
+        show_epg_programm, channel_id=channel_id, dates=today.strftime('%Y-%m-%d'), icon=icon),
         ListItem(kodiutils.get_string(32015).format(kodiutils.get_string(32017))), True)
     # future epg
-    for i in range(1, 14, 1):
+    # get last day available
+    result = get_url(ids.api_epg_url + ids.api_epg_last.format(channelId=channel_id, start=(today.strftime('%Y-%m-%d')+'T00:00')), headers = ids.api_headers)
+    last_date = ''
+    if result:
+        result = json.loads(result)
+        if len(result['response']['data']) > 0:
+            last = result['response']['data'][0]
+            if 'startTime' in last and last['startTime'] != None:
+                try:
+                    local_tz = tzlocal.get_localzone()
+                    startDATE = datetime(1970, 1, 1) + timedelta(seconds=last['startTime'])
+                    startDATE = pytz.utc.localize(startDATE)
+                    startDATE = startDATE.astimezone(local_tz)
+                    last_date = startDATE.date()
+                except: pass
+    if last_date:
+        i = 1
         future_date = today + timedelta(days = i)
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            show_epg_programm, channel_id=channel_id, date=future_date.strftime("%Y%m%d"), icon=icon),
-            ListItem(kodiutils.get_string(32015).format(future_date.strftime("%d.%m.%Y"))), True)
+        while future_date <= last_date:
+            addDirectoryItem(plugin.handle, plugin.url_for(
+                show_epg_programm, channel_id=channel_id, dates=future_date.strftime('%Y-%m-%d'), icon=icon),
+                ListItem(kodiutils.get_string(32015).format(future_date.strftime('%d.%m.%Y'))), True)
+            i += 1
+            future_date = today + timedelta(days = i)
+    else:
+        for i in range(1, 14, 1):
+            future_date = today + timedelta(days = i)
+            addDirectoryItem(plugin.handle, plugin.url_for(
+                show_epg_programm, channel_id=channel_id, dates=future_date.strftime('%Y-%m-%d'), icon=icon),
+                ListItem(kodiutils.get_string(32015).format(future_date.strftime('%d.%m.%Y'))), True)
     endOfDirectory(plugin.handle)
 
 @plugin.route('/category/epg/id=<channel_id>/past')
 def show_epg_past(channel_id):
-    icon = ""
+    icon = ''
     if 'icon' in plugin.args:
         icon = plugin.args['icon'][0]
     today = date.today()
+    
+    result = get_url(ids.api_epg_url + ids.api_epg_first.format(channelId=channel_id), headers = ids.api_headers)
+    first_date = ''
+    if result:
+        result = json.loads(result)
+        if len(result['response']['data']) > 0:
+            first = result['response']['data'][0]
+            if 'startTime' in first and first['startTime'] != None:
+                try:
+                    local_tz = tzlocal.get_localzone()
+                    startDATE = datetime(1970, 1, 1) + timedelta(seconds=first['startTime'])
+                    startDATE = pytz.utc.localize(startDATE)
+                    startDATE = startDATE.astimezone(local_tz)
+                    first_date = startDATE.date()
+                except: pass
     # past epg
-    for i in range(-1,-60, -1):
+    if first_date:
+        i = -1
         past_date = today + timedelta(days = i)
-        #show_epg_programm(channel_id, past_date.strftime("%Y%m%d"), icon)
-        addDirectoryItem(plugin.handle, plugin.url_for(
-            show_epg_programm, channel_id=channel_id, date=past_date.strftime("%Y%m%d"), icon=icon),
-            ListItem(kodiutils.get_string(32015).format(past_date.strftime("%d.%m.%Y"))), True)
+        while past_date >= first_date:
+            #show_epg_programm(channel_id, past_date.strftime('%Y%m%d'), icon)
+            addDirectoryItem(plugin.handle, plugin.url_for(
+                show_epg_programm, channel_id=channel_id, dates=past_date.strftime('%Y-%m-%d'), icon=icon),
+                ListItem(kodiutils.get_string(32015).format(past_date.strftime('%d.%m.%Y'))), True)
+            i -= 1
+            past_date = today + timedelta(days = i)
+    else:
+        for i in range(-1,-60, -1):
+            past_date = today + timedelta(days = i)
+            #show_epg_programm(channel_id, past_date.strftime('%Y%m%d'), icon)
+            addDirectoryItem(plugin.handle, plugin.url_for(
+                show_epg_programm, channel_id=channel_id, dates=past_date.strftime('%Y-%m-%d'), icon=icon),
+                ListItem(kodiutils.get_string(32015).format(past_date.strftime('%d.%m.%Y'))), True)
     endOfDirectory(plugin.handle)
 
-
-
-@plugin.route('/category/epg/id=<channel_id>/date=<date>')
-def show_epg_programm(channel_id, date):
-    icon = ""
+@plugin.route('/category/epg/id=<channel_id>/date=<dates>')
+def show_epg_programm(channel_id, dates):
+    icon = ''
     if 'icon' in plugin.args:
         icon = unquote(plugin.args['icon'][0])
     setContent(plugin.handle, 'tvshows')
-    programs = json.loads(get_url(ids.epg_request_url.format(channel_id=channel_id, date=date), critical=True))
-    for program in programs["programs"]:
-        startDATES = datetime(*(time.strptime(program['starts_at'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
-        LOCALstart = utc_to_local(startDATES)
-        startTIMES = LOCALstart.strftime('%H:%M')
-        goDATE =  LOCALstart.strftime('%d.%m.%Y')
+    result = get_url(ids.api_epg_url + ids.api_epg_from_to.format(channelId=channel_id, start=dates+'T00:00', to=dates+'T23:59'), headers = ids.api_headers)
+    if result:
+        programs = json.loads(result)
+        for program in programs['response']['data']:
+            startTIMES = ''
+            startDATE = date.today()
+            endTIMES = ''
+            endDATE = startDATE
+            goDATE = None
+            name = ''
+            if 'startTime' in program and program['startTime'] != None:
+                try:
+                    local_tz = tzlocal.get_localzone()
+                    startDATE = datetime(1970, 1, 1) + timedelta(seconds=program['startTime'])
+                    startDATE = pytz.utc.localize(startDATE)
+                    startDATE = startDATE.astimezone(local_tz)
+                    goDATE =  startDATE.strftime('%d.%m.%Y')
+                    startTIMES = startDATE.strftime('%H:%M')
+                except: pass
 
-        endDATES = datetime(*(time.strptime(program['ends_at'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
-        LOCALend = utc_to_local(endDATES)
-        endTIMES = LOCALend.strftime('%H:%M')
+            if 'endTime' in program and program['endTime'] != None:
+                try:
+                    local_tz = tzlocal.get_localzone()
+                    endDATE = datetime(1970, 1, 1) + timedelta(seconds=program['endTime'])
+                    endDATE = pytz.utc.localize(endDATE)
+                    endDATE = endDATE.astimezone(local_tz)
+                    endTIMES = endDATE.strftime('%H:%M')
+                except: pass
+            
+            if 'title' in program and program['title'] != None:
+                if '\n' in program['title']:
+                    name = program['title'].replace('\n', ': ')
+                else:
+                    name = program['title']
+            elif 'tvShow' in program and program['tvShow'] != None and 'title' in program['tvShow'] and program['tvShow']['title'] != None:
+                name = program['tvShow']['title']
+            
+            description = ''
+            if 'description' in program and program['description'] != None:
+                description = program['description']
+            tvShow = ''
+            if 'tvShow' in program and program['tvShow'] != None and 'title' in program['tvShow'] and program['tvShow']['title'] != None:
+                tvShow = program['tvShow']['title']
+                if name != tvShow:
+                    name = tvShow + ': ' + name
 
-        if '\n' in program["name"]:
-            name = program["name"].split('\n')[1]
-        else:
-            name = program["name"]
-
-        listitem = ListItem("[COLOR chartreuse]"+startTIMES+": [/COLOR]"+program["name"].replace("\n", ": "))
-        listitem.setInfo(type='Video', infoLabels={'Title': name,
-            'Plot': kodiutils.get_string(32016).format(goDATE, startTIMES, endTIMES)+program["description"],
-            'mediatype': 'video', 'TvShowTitle': program["name"].split('\n')[0], 'Date': goDATE,
-            'Duration': (LOCALend-LOCALstart).total_seconds()})
-        images = json.loads(program["images_json"])
-        if "image_base" in images:
-            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'poster': images["image_base"], 'fanart': images["image_base"]})
-        else:
-            listitem.setArt({'icon': unquote(icon), 'thumb': unquote(icon), 'poster': unquote(icon), 'fanart': unquote(icon)})
-        addDirectoryItem(plugin.handle, url=None, listitem=listitem)
-    endOfDirectory(plugin.handle)
-
-@plugin.route('/category/mediathek/id=<mediathek_id>')
-def show_mediathek(mediathek_id):
-    get_by_collection(mediathek_id, "1")
-    endOfDirectory(plugin.handle)
-
-@plugin.route('/search')
-def show_search():
-    query = xbmcgui.Dialog().input(kodiutils.get_string(32001))
-    if query != "":
-        search_id = ids.search_id
-        channels = json.loads(get_url(ids.categories_request_url.format(id=search_id), critical=True))
-        shows = {}
-        if multiprocess:
-            threads = []
-            pool = ThreadPool(processes=len(channels["category"]["children"]))
-        for channel in channels["category"]["children"]:
-            if multiprocess:
-                thread = pool.apply_async(search_channel, [channel["id"]])
-                thread.name = channel["id"]
-                thread.daemon = True
-                threads.append(thread)
+            listitem = ListItem('[COLOR chartreuse]'+startTIMES+': [/COLOR]'+name)
+            listitem.setInfo(type='Video', infoLabels={'Title': name,
+                'Plot': kodiutils.get_string(32016).format(goDATE, startTIMES, endTIMES) + description,
+                'mediatype': 'video', 'TvShowTitle': tvShow, 'Date': goDATE,
+                'Duration': (endDATE-startDATE).total_seconds()})
+            if 'images' in program and program['images'] != None and len(program['images']) > 0:
+                image = ids.api_image_url.format(program['images'][0]['url'])
+                listitem.setArt({'icon': image, 'thumb': image, 'poster': image, 'fanart': image})
             else:
-                shows.update(search_channel(channel["id"]))
-        if multiprocess:
-            for thread in threads:
-                shows.update(thread.get())
-                pool.close()
-                pool.join()
-        result = {}
-        for show in shows.keys():
-            if query.lower() in show.lower():
-                result.update({show+" | "+shows[show]["top_level_category"]["name"] : shows[show]})
-        for show in result:
-            icon = ""
-            fanart = ""
-            if "images_json" in result[show]:
-                images = json.loads(result[show]["images_json"])
-                if "image_base" in images:
-                    icon = images["image_base"]
-                if "image_show_big" in images:
-                    fanart = images["image_show_big"]
-            listitem = ListItem(result[show]["name"]+" | "+result[show]["top_level_category"]["name"])
-            listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'fanart' : fanart})
-            add_favorites_context_menu(listitem, plugin.url_for(get_by_category, result[show]["id"]), result[show]["name"], icon, fanart)
-            addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, result[show]["id"]),
-                listitem=listitem, isFolder=True)
+                listitem.setArt({'icon': unquote(icon), 'thumb': unquote(icon), 'poster': unquote(icon), 'fanart': unquote(icon)})
+            addDirectoryItem(plugin.handle, url=plugin.url_for(show_info), listitem=listitem)
     endOfDirectory(plugin.handle)
 
-def search_channel(channel_id):
-    shows = {}
-    channel_shows = json.loads(get_url(ids.categories_request_url.format(id=channel_id), critical=True))
-    for show in channel_shows["category"]["children"]:
-        shows.update({show["name"]+" | "+show["top_level_category"]["name"] : show})
-    return shows
+@plugin.route('/category/mediathek/popular')
+def show_mediathek_popular():
+    add_tvshows('', sub_page = ids.api_popular_url, limit = 100)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/mediathek/genre')
+def show_mediathek_genre():
+    addDirectoryItem(plugin.handle, url=plugin.url_for(
+        show_category, 'genres'), listitem=ListItem(kodiutils.get_string(32037)), isFolder=True)
+    overview = get_url(ids.overview_url)
+    if overview:
+        overview = json.loads(overview)
+        for element in overview:
+            if 'name' not in element or element['name'] != 'Mediathek':
+                continue
+            if 'ui_components' in element:
+                for ui in element['ui_components']:
+                    if 'data' in ui and ui['data'] != None and 'source' in ui['data'] and ui['data']['source'] != None:
+                        query_source = get_query(ui['data']['source'])
+                        if 'url' in query_source:
+                            query = get_query(base64.b64decode(query_source['url'][0]).decode('WINDOWS-1252').encode('UTF-8'))
+                            if not 'genres' in query:
+                                continue
+                            if 'type' in query:
+                                query.pop('type', None)
+                            addDirectoryItem(plugin.handle, url=plugin.url_for(
+                                show_a_z, urlencode(query, doseq=True)), listitem=ListItem(query['title'][0]), isFolder=True)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/mediathek/channel')
+def show_mediathek_channel():
+    overview = get_url(ids.overview_url)
+    if overview:
+        overview = json.loads(overview)
+        for element in overview:
+            if 'name' not in element or element['name'] != 'Mediathek':
+                continue
+            if 'ui_components' in element:
+                for ui in element['ui_components']:
+                    if 'data' in ui and ui['data'] != None and 'source' in ui['data'] and ui['data']['source'] != None:
+                        query_source = get_query(ui['data']['source'])
+                        if 'url' in query_source:
+                            query = get_query(base64.b64decode(query_source['url'][0]).decode('WINDOWS-1252').encode('UTF-8'))
+                            if not 'channelId' in query:
+                                continue
+                            icon = get_channel_icon(query['channelId'][0])
+                            if 'type' in query:
+                                query.pop('type', None)
+                            listitem = ListItem(query['title'][0])
+                            listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
+                            addDirectoryItem(plugin.handle, url=plugin.url_for(
+                                show_a_z, urlencode(query, doseq=True)), listitem=listitem, isFolder=True)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/mediathek/a-z/query=<query>')
+def show_a_z(query):
+    setContent(plugin.handle, 'tvshows')
+    log(u'show_a_z with: {0}'.format(query))
+    addDirectoryItem(plugin.handle, url=plugin.url_for(
+        show_tvshows, query, '', False, ids.api_limit), listitem=ListItem('A-Z'), isFolder=True)
+    add_tvshows(query, sub_page=ids.api_popular_url, limit = 100)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/search/search=<search>')
+def show_search(search):
+    setContent(plugin.handle, 'tvshows')
+    search = json.loads(search)
+    log(u'show_search with: {0}'.format(search))
+    if 'type' in search:
+        search.pop('type', None)
+    for key, value in search.items():
+        if value[0] == '':
+            if key == 'search':
+                value[0] = xbmcgui.Dialog().input(kodiutils.get_string(32001))
+            else:
+                value[0] = xbmcgui.Dialog().input(key)
+    add_tvshows(urlencode(search, doseq=True))
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/tvshows/query=<path:add_query>/sub=<path:sub_page>/channel=<show_channel>/limit=<limit>')
+def show_tvshows(add_query, sub_page='', show_channel=False, limit = ids.api_limit):
+    add_tvshows(add_query, sub_page, show_channel, limit)
+    endOfDirectory(plugin.handle)
+    
+def add_tvshows(add_query, sub_page = '', show_channel = False, limit = ids.api_limit):
+    setContent(plugin.handle, 'tvshows')
+    result = get_url(ids.api_tvshows_url + sub_page + ids.api_tvshows_query + str(limit) + '&' + add_query, headers = ids.api_headers)
+    if result:
+        tvshows = json.loads(result)
+        if len(tvshows['response']['data']) == ids.api_limit and kodiutils.get_setting_as_bool('limit_warning'):
+            kodiutils.notification(kodiutils.get_string(32038), kodiutils.get_string(32039))
+        for tvshow in tvshows['response']['data']:
+            if show_channel == True:
+                listitem = ListItem(tvshow['titles']['default']+' | '+tvshow['brand'])
+            else:
+                listitem = ListItem(tvshow['titles']['default'])
+            icon = ''
+            thumb = ''
+            fanart = ''
+            poster = ''
+            no_image = True
+            other_image = ''
+            for image in tvshow['images']:
+                if image['subType'] == 'Teaser':
+                    icon = ids.api_image_url.format(image['url'])
+                    thumb = icon
+                    poster = icon
+                    no_image = False
+                elif image['subType'] == 'Cover Big':
+                    fanart = ids.api_image_url.format(image['url'])
+                else:
+                    other_image = ids.api_image_url.format(image['url'])
+            if no_image:
+                icon = other_image
+                thumb = other_image
+                poster = other_image
+                fanart = other_image
+            listitem.setArt({'icon': icon, 'thumb': thumb, 'poster': poster, 'fanart' : fanart})
+            
+            plot = ''
+            log(tvshow['titles']['default'])
+            html = html2text.HTML2Text()
+            html.body_width  = 0
+            if 'descriptions' in tvshow and tvshow['descriptions']['default'] and tvshow['descriptions']['default'] != None:
+                plot = html.handle(tvshow['descriptions']['default'])
+            elif 'metaDescriptions' in tvshow and tvshow['metaDescriptions']['default'] and tvshow['metaDescriptions']['default'] != None:
+                plot = tvshow['metaDescriptions']['default']
+            elif 'shortDescriptions' in tvshow and tvshow['shortDescriptions']['default'] and tvshow['shortDescriptions']['default'] != None:
+                plot = tvshow['shortDescriptions']['default']
+            
+            listitem.setInfo(type='Video', infoLabels={'Title': tvshow['titles']['default'], 'Plot': plot,'mediatype': 'episode'})
+            
+            add_favorites_context_menu(listitem, plugin.url_for(show_tvshow, tvshow['id']), tvshow['titles']['default'], icon, fanart)
+            addDirectoryItem(plugin.handle, url=plugin.url_for(show_tvshow, tvshow['id']),
+                listitem=listitem, isFolder=True)
+
+
+@plugin.route('/category/tvshow/id=<id>')
+def show_tvshow(id):
+    setContent(plugin.handle, 'tvshows')
+    icon = ''
+    thumb = ''
+    fanart = ''
+    poster = ''
+    title = ''
+    result = get_url(ids.api_tvshows_url + ids.api_tvshows_query + '1' + '&' + ids.api_tvshows_tvshow_query.format(id=id), headers = ids.api_headers)
+    if result:
+        tvshow = json.loads(result)['response']['data']
+        if len(tvshow) > 0:
+            title = tvshow[0]['titles']['default']
+            no_image = True
+            other_image = ''
+            for image in tvshow[0]['images']:
+                if image['subType'] == 'Teaser':
+                    icon = ids.api_image_url.format(image['url'])
+                    thumb = icon
+                    poster = icon
+                    no_image = False
+                elif image['subType'] == 'Cover Big':
+                    fanart = ids.api_image_url.format(image['url'])
+                else:
+                    other_image = ids.api_image_url.format(image['url'])
+            if no_image:
+                icon = other_image
+                thumb = other_image
+                poster = other_image
+                fanart = other_image
+    
+    for typeurl in [(kodiutils.get_string(32030), ids.api_videos_episode_url), (kodiutils.get_string(32031), ids.api_videos_clip_url), (kodiutils.get_string(32032), ids.api_videos_bonus_url), (kodiutils.get_string(32033), ids.api_videos_vorschau_url)]:
+        result = get_url(ids.api_videos_url + ids.api_videos_query.format(id=id) + typeurl[1], headers = ids.api_headers)
+        if result:
+            videos = json.loads(result)
+            if len(videos['response']['data']) > 0:
+                listitem = ListItem(typeurl[0])
+                listitem.setArt({'icon': icon,'thumb': thumb, 'poster': poster, 'fanart': fanart})
+                addDirectoryItem(plugin.handle, url=plugin.url_for(show_tvshow_videos, id, typeurl[1]), listitem=listitem, isFolder=True)
+    add_favorites_folder(plugin.url_for(show_tvshow, id), title, icon, fanart)
+    endOfDirectory(plugin.handle)
+
+@plugin.route('/category/tvshow/id=<id>/videos/category=<category_query>')
+def show_tvshow_videos(id, category_query):
+    setContent(plugin.handle, 'tvshows')
+    if kodiutils.get_setting('sort') == '1':
+        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_UNSORTED)
+        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
+        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_DURATION)
+        xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_EPISODE)
+    result = get_url(ids.api_videos_url + ids.api_videos_query.format(id=id) + category_query, headers = ids.api_headers)
+    if result:
+        videos = json.loads(result)
+        if len(videos['response']['data']) == ids.api_limit:
+            kodiutils.notification(kodiutils.get_string(32038), kodiutils.get_string(32039))
+        for video in videos['response']['data']:
+            airDATE = None
+            airTIMES = u''
+            endTIMES = u''
+            Note_1 = u''
+            Note_2 = u''
+            if u'metaDescriptions' in video['episode'] and video['episode']['metaDescriptions']['default'] and video['episode']['metaDescriptions']['default'] != None:
+                Note_2 = video['episode']['metaDescriptions']['default']
+            elif u'descriptions' in video:
+                Note_2 = video['descriptions']['default']
+            if not Note_2:
+                Note_2 = u''
+            
+            if 'copyright' in video and video['copyright'] != None:
+                Note_2 += u'[CR][CR]©' + video['copyright']
+            
+            cast = []
+            director = []
+            
+            for person in video['credits']:
+                if person['role'] == 'director':
+                    director.append(person['name'])
+                else:
+                    cast.append(person['name'])
+                    
+            log(cast)
+            log(director)
+            if 'airdates' in video['episode'] and video['episode']['airdates'] != None and len(video['episode']['airdates']) > 0 and video['episode']['airdates'][0]['date'] != 0:
+                try:
+                    local_tz = tzlocal.get_localzone()
+                    airDATES = datetime(1970, 1, 1) + timedelta(seconds=video['episode']['airdates'][0]['date'])
+                    airDATES = pytz.utc.localize(airDATES)
+                    airDATES = airDATES.astimezone(local_tz)
+                    airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+                    airDATE = airDATES.strftime('%d.%m.%Y')
+                except: pass
+            if 'visibilities' in video and video['visibilities'] != None and len(video['visibilities']) > 0 and video['visibilities'][0]['endsAt'] != None:
+                try:
+                    local_tz = tzlocal.get_localzone()
+                    endDATES = datetime(1970, 1, 1) + timedelta(seconds=video['visibilities'][0]['endsAt'])
+                    endDATES = pytz.utc.localize(endDATES)
+                    endDATES = endDATES.astimezone(local_tz)
+                    endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+                except: pass
+            if airTIMES != u'': Note_1 = kodiutils.get_string(32005).format(str(airTIMES))
+            if endTIMES != u'': Note_1 += kodiutils.get_string(32029).format(str(endTIMES))
+            if Note_1 != '': Note_1 += '[CR]'
+            if airDATE and kodiutils.get_setting('sort') == '1': xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_DATE)
+            
+            season = -1
+            episode = -1
+            if 'episode' in video  and 'number' in video['episode'] and video['episode']['number'] != None:
+                episode = video['episode']['number']
+            if 'season' in video and 'number' in video['season'] and video['season']['number'] != None:
+                season = video['season']['number']
+            elif video['titles']['default'].lower().find('staffel') > -1 or video['titles']['default'].lower().find('episode') > -1 or video['titles']['default'].lower().find('folge') > -1:
+                try: season = re.search('Staffel\s*(\d+)', video['titles']['default']).group(1)
+                except: pass
+                try: episode = re.search('Episode\s*(\d+)', video['titles']['default']).group(1)
+                except:
+                    try: episode = re.search('Folge\s*(\d+)', video['titles']['default']).group(1)
+                    except: pass
+            if not kodiutils.get_setting_as_bool('keep_episode_number') and (video['titles']['default'].lower().find('staffel') > -1 or video['titles']['default'].lower().find('episode') > -1 or video['titles']['default'].lower().find('folge') > -1):
+                try: video['cleantitle'] = re.search(':\s*(.*)', video['titles']['default']).group(1)
+                except: pass
+            if season != -1 or episode != -1:
+                video['mediatype'] = 'episode'
+            
+            log('Title: '+video['titles']['default'])
+            listitem = ListItem(video['titles']['default'])
+            
+            if len(video['images']) > 0:
+                icon = ids.api_image_url.format(video['images'][0]['url'])
+                listitem.setArt({'icon': icon, 'thumb': icon, 'fanart': icon, 'poster': icon})
+            listitem.setProperty('IsPlayable', 'true')
+            listitem.setInfo(type='Video', infoLabels={'Title': video.get('cleantitle', video['titles']['default']), 'Plot': Note_1+Note_2, 'TvShowTitle': video['tvShow']['titles']['default'], 'Season': season, 'episode': episode, 'Duration': video['duration']/1000, 'Date': airDATE, 'cast': cast, 'director': director, 'mediatype': video.get('mediatype', 'movie')})
+            listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
+            addDirectoryItem(plugin.handle, url=plugin.url_for(play_video, video['id'], ''), listitem=listitem)
+    endOfDirectory(plugin.handle)
+    
 
 @plugin.route('/category/livestream/<livestream_id>')
 def play_livestream(livestream_id):
     config_url = ids.get_livestream_config_url(livestream_id)
     config = json.loads(get_url(config_url, cache=True, critical=True))
-    mdslive = config["mdsclient"]["mdsLive"]
-    client_token = get_livestream_client_token(access_token=mdslive["accessToken"], client_location=mdslive["clientLocation"], salt=mdslive["salt"], property_name=ids.get_livestream_channel_id(livestream_id))
-    protocols_url = mdslive["baseUrl"]+"live/1.0/getprotocols?access_token="+mdslive["accessToken"]+"&client_location="+mdslive["clientLocation"]+"&client_token="+client_token+"&property_name="+ids.get_livestream_channel_id(livestream_id)
+    mdslive = config['mdsclient']['mdsLive']
+    client_token = get_livestream_client_token(access_token=mdslive['accessToken'], client_location=mdslive['clientLocation'], salt=mdslive['salt'], property_name=ids.get_livestream_channel_id(livestream_id))
+    protocols_url = mdslive['baseUrl']+'live/1.0/getprotocols?access_token='+mdslive['accessToken']+'&client_location='+mdslive['clientLocation']+'&client_token='+client_token+'&property_name='+ids.get_livestream_channel_id(livestream_id)
     resp_prot = get_url(protocols_url, critical=True)
     protocols = json.loads(resp_prot)
 
     if LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
-        log("version is: " + xbmc.getInfoLabel('System.BuildVersion'))
+        log('version is: ' + xbmc.getInfoLabel('System.BuildVersion'))
         kodiutils.notification('ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
 
-    protocol = ""
-    drm = ""
-    if kodiutils.get_setting("drm") == "0":
-        protocol = "dash:widevine"
-        drm_name = "widevine"
+    protocol = ''
+    drm = ''
+    if kodiutils.get_setting('drm') == '0':
+        protocol = 'dash:widevine'
+        drm_name = 'widevine'
         drm = 'com.widevine.alpha'
     else:
-        protocol = "dash:playready"
-        drm_name = "playready"
+        protocol = 'dash:playready'
+        drm_name = 'playready'
         drm = 'com.microsoft.playready'
-    log("drm: "+drm)
+    log('drm: '+drm)
 
-    client_server_token = get_livestream_server_client_token(access_token=mdslive["accessToken"], client_location=mdslive["clientLocation"], salt=mdslive["salt"], property_name=ids.get_livestream_channel_id(livestream_id), protocols=protocol, server_token=protocols["server_token"])
-    urls_url = mdslive["baseUrl"]+"live/1.0/geturls?access_token="+mdslive["accessToken"]+"&client_location="+mdslive["clientLocation"]+"&client_token="+client_server_token+"&property_name="+ids.get_livestream_channel_id(livestream_id)+"&protocols="+protocol+"&secure_delivery=true"+"&server_token="+protocols["server_token"]
+    client_server_token = get_livestream_server_client_token(access_token=mdslive['accessToken'], client_location=mdslive['clientLocation'], salt=mdslive['salt'], property_name=ids.get_livestream_channel_id(livestream_id), protocols=protocol, server_token=protocols['server_token'])
+    urls_url = mdslive['baseUrl']+'live/1.0/geturls?access_token='+mdslive['accessToken']+'&client_location='+mdslive['clientLocation']+'&client_token='+client_server_token+'&property_name='+ids.get_livestream_channel_id(livestream_id)+'&protocols='+protocol+'&secure_delivery=true'+'&server_token='+protocols['server_token']
     resp_url = get_url(urls_url, critical=True)
     urls = json.loads(resp_url)
-    log("Available formats: " + str(urls))
+    log('Available formats: ' + str(urls))
 
     playitem = ListItem('none')
     is_helper = None
@@ -468,117 +720,118 @@ def play_livestream(livestream_id):
 
     if is_helper and inputstream_installed and is_helper.check_inputstream():
         version = xbmcaddon.Addon('inputstream.adaptive').getAddonInfo('version')
-        if LooseVersion(version) < LooseVersion("2.2.2"):
+        if LooseVersion(version) < LooseVersion('2.2.2'):
             # inputstream to old cannot play mpd
             xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
             setResolvedUrl(plugin.handle, False, ListItem(label='none'))
         else:
-            playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls["urls"]["dash"][drm_name]["url"]+"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1")
+            playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls['urls']['dash'][drm_name]['url']+'|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1')
             playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
             playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
             playitem.setProperty('inputstream.adaptive.license_type', drm)
-            playitem.setProperty("inputstream.adaptive.manifest_update_parameter", "full")
-            playitem.setProperty('inputstream.adaptive.license_key', urls["urls"]["dash"][drm_name]["drm"]["licenseAcquisitionUrl"] + "?token=" + urls["urls"]["dash"][drm_name]["drm"]["token"] +"|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1" +'|R{SSM}|')
+            playitem.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
+            playitem.setProperty('inputstream.adaptive.license_key', urls['urls']['dash'][drm_name]['drm']['licenseAcquisitionUrl'] + '?token=' + urls['urls']['dash'][drm_name]['drm']['token'] +'|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1' +'|R{SSM}|')
             setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
         setResolvedUrl(plugin.handle, False, playitem)
-    #xbmc.Player().play(item=urls["urls"]["dash"]["widevine"]["url"], listitem=playitem)
-
+    #xbmc.Player().play(item=urls['urls']['dash']['widevine']['url'], listitem=playitem)
+    
+@plugin.route('/category/video/<video_id>')
 @plugin.route('/category/video/<video_id>/<channel>')
-def play_video(video_id, channel):
+def play_video(video_id, channel=''):
     # remove channel number if available
-    if "_" in video_id:
-        video_id = video_id.split("_")[1]
-    config_url = ""
-    if channel == "All Channels Feed" or channel == "":
+    if '_' in video_id:
+        video_id = video_id.split('_')[1]
+    config_url = ''
+    if channel == 'All Channels Feed' or channel == '':
         # no channel info guess by id
         if not video_id.isdigit():
             #probalby a video from puls4 or atv
-            config_url = ids.get_livestream_config_url("puls4_and_atv_at")
+            config_url = ids.get_livestream_config_url('puls4_and_atv_at')
         else:
-            config_url = ids.get_livestream_config_url("austrian_tv")
+            config_url = ids.get_livestream_config_url('austrian_tv')
     else:
-        if channel == "PULS 4" or channel == "ATV":
-            config_url = ids.get_livestream_config_url("puls4_and_atv_at")
+        if channel == 'PULS 4' or channel == 'ATV':
+            config_url = ids.get_livestream_config_url('puls4_and_atv_at')
         else:
-            config_url = ids.get_livestream_config_url("austrian_tv")
+            config_url = ids.get_livestream_config_url('austrian_tv')
     config = json.loads(get_url(config_url, cache=True, critical=True))
-    mdsV2 = config["mdsclient"]["mdsV2"]
-    sources_request_url = mdsV2["baseUrl"]+"vas/live/v2/videos?access_token=%s&client_location=null&client_name=%s&ids=%s" % (mdsV2["accessToken"], mdsV2["clientName"], video_id)
+    mdsV2 = config['mdsclient']['mdsV2']
+    sources_request_url = mdsV2['baseUrl']+'vas/live/v2/videos?access_token=%s&client_location=null&client_name=%s&ids=%s' % (mdsV2['accessToken'], mdsV2['clientName'], video_id)
     sources_request = json.loads(get_url(sources_request_url, critical=True))
-    log("sources_request: " + str(sources_request))
-    protected = sources_request[0]["is_protected"]
+    log('sources_request: ' + str(sources_request))
+    protected = sources_request[0]['is_protected']
     mpd_id = 0
     m3u8_id = 0
     ism_id = 0
     mp4_id = 0
-    protocol = ""
-    for source in sources_request[0]["sources"]:
-        if source["mimetype"] == "text/xml":
-            ism_id = source["id"]
-        if source["mimetype"] == "application/x-mpegURL":
-            m3u8_id = source["id"]
-        if source["mimetype"] == "application/dash+xml":
-            mpd_id = source["id"]
-        if source["mimetype"] == "video/mp4":
-            mp4_id = source["id"]
+    protocol = ''
+    for source in sources_request[0]['sources']:
+        if source['mimetype'] == 'text/xml':
+            ism_id = source['id']
+        if source['mimetype'] == 'application/x-mpegURL':
+            m3u8_id = source['id']
+        if source['mimetype'] == 'application/dash+xml':
+            mpd_id = source['id']
+        if source['mimetype'] == 'video/mp4':
+            mp4_id = source['id']
     drm = None
     if not protected:
         if kodiutils.get_setting_as_int('non_drm_format') == 0:
             source_id = mpd_id
-            protocol = "mpd"
+            protocol = 'mpd'
         elif kodiutils.get_setting_as_int('non_drm_format') == 3:
             source_id = mp4_id
-            protocol = "mp4"
+            protocol = 'mp4'
         else:
             source_id = m3u8_id
-            protocol = "hls"
+            protocol = 'hls'
     else:
-        if kodiutils.get_setting("drm") == "0":
+        if kodiutils.get_setting('drm') == '0':
             source_id = mpd_id
-            protocol = "mpd"
-            drm_name = "widevine"
+            protocol = 'mpd'
+            drm_name = 'widevine'
             drm = 'com.widevine.alpha'
         else:
             source_id = ism_id
-            protocol = "ism"
-            drm_name = "playready"
+            protocol = 'ism'
+            drm_name = 'playready'
             drm = 'com.microsoft.playready'
 
     if protected and LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
-        log("version is: " + xbmc.getInfoLabel('System.BuildVersion'))
+        log('version is: ' + xbmc.getInfoLabel('System.BuildVersion'))
         kodiutils.notification('ERROR', kodiutils.get_string(32025))
         setResolvedUrl(plugin.handle, False, ListItem('none'))
         return
 
-    server_request_token = get_video_server_request_token(access_token=mdsV2["accessToken"], client_location="null", client_name=mdsV2["clientName"], video_id=video_id, salt=mdsV2["salt"])
-    server_request_url = mdsV2["baseUrl"]+"vas/live/v2/videos/%s/sources?access_token=%s&client_id=%s&client_location=null&client_name=%s" % (video_id, mdsV2["accessToken"], server_request_token, mdsV2["clientName"])
+    server_request_token = get_video_server_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], video_id=video_id, salt=mdsV2['salt'])
+    server_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources?access_token=%s&client_id=%s&client_location=null&client_name=%s' % (video_id, mdsV2['accessToken'], server_request_token, mdsV2['clientName'])
     server_request = json.loads(get_url(server_request_url, critical=True))
-    server_id = server_request["server_id"]
+    server_id = server_request['server_id']
 
-    start = ""
-    end = ""
-    if protected and kodiutils.get_setting("drm") == "0" and kodiutils.get_setting_as_bool("oldformat"):
-        start = "0"
-        end = "999999999"
+    start = ''
+    end = ''
+    if protected and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat'):
+        start = '0'
+        end = '999999999'
 
-    source_url_request_token = get_video_source_request_token(access_token=mdsV2["accessToken"], client_location="null", client_name=mdsV2["clientName"], server_id= server_id, source_id=source_id, video_id=video_id, salt=mdsV2["salt"], start=start, end=end)
-    source_url_request_url = mdsV2["baseUrl"]+"vas/live/v2/videos/%s/sources/url?access_token=%s&client_id=%s&client_location=null&client_name=%s&secure_delivery=true&server_id=%s&source_ids=%s" % (video_id, mdsV2["accessToken"], source_url_request_token, mdsV2["clientName"], server_id, source_id)
+    source_url_request_token = get_video_source_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], server_id= server_id, source_id=source_id, video_id=video_id, salt=mdsV2['salt'], start=start, end=end)
+    source_url_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources/url?access_token=%s&client_id=%s&client_location=null&client_name=%s&secure_delivery=true&server_id=%s&source_ids=%s' % (video_id, mdsV2['accessToken'], source_url_request_token, mdsV2['clientName'], server_id, source_id)
 
-    if protected and kodiutils.get_setting("drm") == "0"and kodiutils.get_setting_as_bool("oldformat"):
-        source_url_request_url += "&subclip_start=0&subclip_end=999999999"
+    if protected and kodiutils.get_setting('drm') == '0'and kodiutils.get_setting_as_bool('oldformat'):
+        source_url_request_url += '&subclip_start=0&subclip_end=999999999'
 
     source_url_request = json.loads(get_url(source_url_request_url, critical=True))
-    if not "status_code" in source_url_request or source_url_request["status_code"] != 0:
-        log("error on video request: " + str(source_url_request))
+    if not 'status_code' in source_url_request or source_url_request['status_code'] != 0:
+        log('error on video request: ' + str(source_url_request))
         return sys.exit(0)
 
     playitem = ListItem('none')
-    log("selected non drm format: " + kodiutils.get_setting('non_drm_format'))
-    log("media url: " + source_url_request["sources"][0]["url"])
+    log('selected non drm format: ' + kodiutils.get_setting('non_drm_format'))
+    log('media url: ' + source_url_request['sources'][0]['url'])
     if not protected and (kodiutils.get_setting_as_int('non_drm_format') == 2 or kodiutils.get_setting_as_int('non_drm_format') == 3):
-        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request["sources"][0]["url"]+"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36")
+        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36')
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         is_helper = None
@@ -602,22 +855,22 @@ def play_video(video_id, channel):
 
         if is_helper and inputstream_installed and is_helper.check_inputstream():
             version = xbmcaddon.Addon('inputstream.adaptive').getAddonInfo('version')
-            if not protected and kodiutils.get_setting_as_int('non_drm_format') == 0 and LooseVersion(version) < LooseVersion("2.2.2"):
+            if not protected and kodiutils.get_setting_as_int('non_drm_format') == 0 and LooseVersion(version) < LooseVersion('2.2.2'):
                 # inputstream to old cannot play mpd
                 # switch to hls
                 kodiutils.set_setting('non_drm_format', 1)
                 play_video(video_id, channel)
-            elif protected and LooseVersion(version) < LooseVersion("2.2.2"):
+            elif protected and LooseVersion(version) < LooseVersion('2.2.2'):
                 # inputstream to old cannot play mpd
                 xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
                 setResolvedUrl(plugin.handle, False, ListItem(label='none'))
             else:
-                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request["sources"][0]["url"]+"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36")
+                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36')
                 playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
                 playitem.setProperty('inputstream.adaptive.manifest_type', protocol)
                 if protected:
                     playitem.setProperty('inputstream.adaptive.license_type', drm)
-                    playitem.setProperty('inputstream.adaptive.license_key', source_url_request["drm"]["licenseAcquisitionUrl"] + "?token=" + source_url_request["drm"]["token"] +"|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" +'|R{SSM}|')
+                    playitem.setProperty('inputstream.adaptive.license_key', source_url_request['drm']['licenseAcquisitionUrl'] + '?token=' + source_url_request['drm']['token'] +'|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36' +'|R{SSM}|')
                 setResolvedUrl(plugin.handle, True, playitem)
         else:
             if drm:
@@ -633,161 +886,9 @@ def play_video(video_id, channel):
                 else:
                     setResolvedUrl(plugin.handle, False, playitem)
 
-
-@plugin.route('/category/by_category/id=<category_id>')
-def get_by_category(category_id):
-    dir = get_url(ids.categories_request_url.format(id=category_id), critical=False)
-    dir_json = {}
-    if dir:
-        dir_json = json.loads(dir)
-    special = ['ganze folgen', 'clips', 'bonus']
-    if dir_json and "children" in dir_json["category"]:
-        setContent(plugin.handle, 'tvshows')
-        icon = ""
-        fanart = ""
-        if "images_json" in dir_json["category"]:
-            images_parent = json.loads(dir_json["category"]["images_json"])
-            if "image_base" in images_parent and images_parent["image_base"] != None:
-                icon = images_parent["image_base"]
-            if "image_show_big" in images_parent and images_parent["image_show_big"] != None:
-                fanart = images_parent["image_show_big"]
-        for child in dir_json["category"]["children"]:
-            name = child["name"]
-            icon_child = icon
-            fanart_child = fanart
-            if not any(x in child["name"].lower() for x in special):
-                icon_child = ""
-                fanart_child = ""
-                if "images_json" in child:
-                    images_child = json.loads(child["images_json"])
-                    if "image_base" in images_child:
-                        icon_child = images_child["image_base"]
-                    if "image_show_big" in images_child:
-                        fanart_child = images_child["image_show_big"]
-            listitem = ListItem(name)
-            listitem.setArt({'icon': icon_child, 'thumb': icon_child, 'poster': icon_child, 'fanart': fanart_child})
-            plot = ""
-            if 'description' in child and child['description'] != None:
-                try:
-                    startDATES = datetime(*(time.strptime(child['description'].split(', ')[1], '%d.%m.%y')[0:6])) # Do, 04.07.19
-                    locale.setlocale(locale.LC_ALL, '')
-                    lastTIMES = startDATES.strftime('%A - %d.%m.%Y')
-                    plot = kodiutils.get_string(32006).format(str(lastTIMES))
-                except: pass
-            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
-            add_favorites_context_menu(listitem, plugin.url_for(get_by_category, child["id"]), name, icon_child, fanart_child)
-            addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, child["id"]),
-                listitem=listitem, isFolder=True)
-        add_favorites_folder(plugin.url_for(get_by_category, dir_json["category"]["id"]),
-            dir_json["category"]["name"], icon, fanart)
-    if dir_json and "vod_items" in dir_json["category"]:
-        if kodiutils.get_setting("sort") == "1":
-            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_UNSORTED)
-            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL)
-            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_DURATION)
-            xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_EPISODE)
-        setContent(plugin.handle, 'tvshows')
-        for vod in dir_json["category"]["vod_items"]:
-            goDATE = None
-            startTIMES = ""
-            Note_1 = ""
-            Note_2 = vod["summary"]
-            if not Note_2:
-                Note_2 = ""
-            if 'order_date' in vod and not str(vod['order_date']).startswith('1970') and vod['order_date'] != None:
-                try:
-                    startDATES = datetime(*(time.strptime(vod['order_date'].split(' +')[0], '%Y/%m/%d %H:%M:%S')[0:6])) # 2019/06/23 14:10:00 +0000
-                    LOCALstart = utc_to_local(startDATES)
-                    startTIMES = LOCALstart.strftime('%d.%m.%Y - %H:%M')
-                    goDATE =  LOCALstart.strftime('%d.%m.%Y')
-                except: pass
-            if startTIMES != "": Note_1 = kodiutils.get_string(32005).format(str(startTIMES))
-            if goDATE and kodiutils.get_setting("sort") == "1": xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
-            if vod['title'].lower().find('staffel') > -1 or vod['title'].lower().find('episode') > -1 or vod['title'].lower().find('folge') > -1:
-                try: vod['season'] = re.search('Staffel\s*(\d+)', vod['title']).group(1)
-                except: pass
-                try: vod['episode'] = re.search('Episode\s*(\d+)', vod['title']).group(1)
-                except:
-                    try:vod['episode'] = re.search('Folge\s*(\d+)', vod['title']).group(1)
-                    except: pass
-                if not kodiutils.get_setting_as_bool('keep_episode_number'):
-                    try: vod['cleantitle'] = re.search(':\s*(.*)', vod['title']).group(1)
-                    except: pass
-                if vod.get('season', -1) != -1 or vod.get('episode', -1) != -1:
-                    vod['mediatype'] = 'episode'
-            log("Title: "+vod["title"])
-            images = json.loads(vod["images_json"])
-            listitem = ListItem(vod["title"])
-            listitem.setArt({'icon': images["image_base"], 'thumb': images["image_base"], 'fanart': images["image_base"], 'poster': images["image_base"]})
-            listitem.setProperty('IsPlayable', 'true')
-            listitem.setInfo(type='Video', infoLabels={'Title': vod.get('cleantitle', vod["title"]), 'Plot': Note_1+Note_2, 'TvShowTitle': vod['show_name'], 'Season': vod.get('season', "-1"), 'episode': vod.get('episode', "-1"), 'Duration': vod['duration'], 'Date': goDATE, 'mediatype': vod.get('mediatype', 'video')})
-            listitem.addContextMenuItems([('Queue', 'Action(Queue)')])
-            addDirectoryItem(plugin.handle, url=plugin.url_for(play_video, vod["external_id"], vod["top_level_category"]["name"]),
-                listitem=listitem)
-    if not dir_json:
-        add_favorites_folder(plugin.url_for(get_by_category, category_id),
-            'no name', '', '')
-    endOfDirectory(plugin.handle)
-
 def utc_to_local(dt):
     if time.localtime().tm_isdst: return dt - timedelta(seconds=time.altzone)
     else: return dt - timedelta(seconds=time.timezone)
-
-@plugin.route('/category/by_collection/id=<collection_id>/page=<page>')
-def get_by_collection(collection_id, page):
-    recursive = False
-    if 'recursive' in plugin.args:
-        recursive = plugin.args['recursive'][0] == "True"
-    add_directories(collection_id, page, recursive)
-    endOfDirectory(plugin.handle)
-
-
-def add_directories(id, page = "1", recursive=False, prefix=""):
-    dir = get_url(ids.collections_request_url.format(id=id, page=page), critical=True)
-    dir_json = json.loads(dir)
-    for item in dir_json["results"]:
-        setContent(plugin.handle, 'tvshows')
-        images = json.loads(item["images_json"])
-        if item["type"] == "Category":
-            name = item["name"]
-            if "top_level_category" in item:
-                if item["top_level_category"]["name"].lower() == item["name"].lower():
-                    name = item["promotion_name"]
-            listitem = ListItem(name)
-            listitem.setArt({'icon': images["image_base"],'thumb': images["image_base"], 'poster': images["image_base"]})
-            fanart = ""
-            if "image_show_big" in images:
-                fanart = images["image_show_big"]
-                listitem.setArt({"fanart" : images["image_show_big"]})
-            plot = ""
-            if 'description' in item and item['description'] != None:
-                try:
-                    startDATES = datetime(*(time.strptime(item['description'].split(', ')[1], '%d.%m.%y')[0:6])) # Do, 04.07.19
-                    locale.setlocale(locale.LC_ALL, '')
-                    lastTIMES = startDATES.strftime('%A - %d.%m.%Y')
-                    plot = kodiutils.get_string(32006).format(str(lastTIMES))
-                except: pass
-            listitem.setInfo(type='Video', infoLabels={'Title': name, 'Plot': plot})
-            add_favorites_context_menu(listitem, plugin.url_for(get_by_category, item["id"]), name, images["image_base"], fanart)
-            addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_category, item["id"]),
-                listitem=listitem, isFolder=True)
-        elif item["type"] == "Collection":
-            if item["ui_tag"] == "":
-                add_directories(item["id"], prefix=item["title"]+" ")
-            elif recursive:
-                add_directories(item["id"])
-            else:
-                icon = ""
-                if "image_base" in images:
-                    icon = images["image_base"]
-                addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_collection, item["id"], "1"),
-                    listitem=ListItem(prefix+item["title"], iconImage=icon, thumbnailImage=icon), isFolder=True)
-    if int(dir_json["pagination"]["page"]) * int(dir_json["pagination"]["items_per_page"]) < int(dir_json["pagination"]["total_items"]):
-        if kodiutils.get_setting_as_bool("limitlist"):
-            addDirectoryItem(plugin.handle, url=plugin.url_for(get_by_collection, id, str(int(page)+1)),
-                listitem=ListItem(kodiutils.get_string(32007).format(str(int(page)+1))), isFolder=True)
-        else:
-            get_by_collection(id, str(int(page)+1))
 
 def add_favorites_folder(path, name, icon, fanart):
     global favorites
@@ -798,12 +899,16 @@ def add_favorites_folder(path, name, icon, fanart):
 
     if not favorites or path not in favorites:
         # add favorites folder
-        #addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, query="%s***%s###%s###%s" % (path, name, icon, fanart)), listitem=ListItem(kodiutils.get_string(32004)))
-        addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, path=quote(codecs.encode(path, 'UTF-8')), name=quote(codecs.encode(name, 'UTF-8')), icon=quote(codecs.encode(icon, 'UTF-8')), fanart=quote(codecs.encode(fanart, 'UTF-8'))), listitem=ListItem(kodiutils.get_string(32008)))
+        #addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, query='%s***%s###%s###%s' % (path, name, icon, fanart)), listitem=ListItem(kodiutils.get_string(32004)))
+        listitem = ListItem(kodiutils.get_string(32008))
+        listitem.setArt({'icon': icon,'thumb': icon, 'poster': icon, 'fanart': fanart})
+        addDirectoryItem(plugin.handle, url=plugin.url_for(add_favorite, path=quote(codecs.encode(path, 'UTF-8')), name=quote(codecs.encode(name, 'UTF-8')), icon=quote(codecs.encode(icon, 'UTF-8')), fanart=quote(codecs.encode(fanart, 'UTF-8'))), listitem=listitem)
     else:
         # remove favorites
+        listitem = ListItem(kodiutils.get_string(32009))
+        listitem.setArt({'icon': icon,'thumb': icon, 'poster': icon, 'fanart': fanart})
         addDirectoryItem(plugin.handle, url=plugin.url_for(remove_favorite, query=quote(codecs.encode(path, 'UTF-8'))),
-            listitem=ListItem(kodiutils.get_string(32009)))
+            listitem=listitem)
 
 def add_favorites_context_menu(listitem, path, name, icon, fanart):
     global favorites
@@ -827,10 +932,10 @@ def add_favorite():
     #data = plugin.args['query'][0].split('***')
     path = plugin.args['path'][0]
     name = plugin.args['name'][0]
-    icon = ""
+    icon = ''
     if 'icon' in plugin.args:
         icon = plugin.args['icon'][0]
-    fanart = ""
+    fanart = ''
     if 'fanart' in plugin.args:
         fanart = plugin.args['fanart'][0]
         
@@ -861,7 +966,7 @@ def add_favorite():
         favorites_file.close()
 
     #favorites.update({data[0] : data[1]})
-    favorites.update({path : {"name" : name, "icon" : icon, "fanart" : fanart}})
+    favorites.update({path : {'name' : name, 'icon' : icon, 'fanart' : fanart}})
     # load favorites
     favorites_file = xbmcvfs.File(favorites_file_path, 'w')
     json.dump(favorites, favorites_file, indent=2)
@@ -870,7 +975,7 @@ def add_favorite():
     
     kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32011).format(name))
     xbmc.executebuiltin('Container.Refresh')
-    setResolvedUrl(plugin.handle, True, ListItem("none"))
+    setResolvedUrl(plugin.handle, True, ListItem('none'))
 
 @plugin.route('/remove_fav')
 def remove_favorite():
@@ -882,7 +987,7 @@ def remove_favorite():
         favorites = json.load(favorites_file)
         favorites_file.close()
 
-    name = favorites[data]["name"]
+    name = favorites[data]['name']
     del favorites[data]
     # load favorites
     favorites_file = xbmcvfs.File(favorites_file_path, 'w')
@@ -891,7 +996,7 @@ def remove_favorite():
 
     kodiutils.notification(kodiutils.get_string(32010), kodiutils.get_string(32012).format(name))
     xbmc.executebuiltin('Container.Refresh')
-    setResolvedUrl(plugin.handle, True, ListItem("none"))
+    setResolvedUrl(plugin.handle, True, ListItem('none'))
 
 def get_url(url, headers={}, cache=False, critical=False):
     log(url)
@@ -900,8 +1005,8 @@ def get_url(url, headers={}, cache=False, critical=False):
     if cache == True:
         cache_tag = ids.get_livestream_config_tag(url)
         if cache_tag != None:
-            new_headers.update({"If-None-Match": cache_tag})
-    new_headers.update({"User-Agent":"okhttp/3.10.0", "Accept-Encoding":"gzip"})
+            new_headers.update({'If-None-Match': cache_tag})
+    new_headers.update({'User-Agent':'okhttp/3.12.1', 'Accept-Encoding':'gzip'})
     try:
         request = urlopen(Request(url, headers=new_headers))
     except HTTPError as e:
@@ -909,14 +1014,20 @@ def get_url(url, headers={}, cache=False, critical=False):
             return ids.get_livestream_config_cache(url)
         failure = str(e)
         if hasattr(e, 'code'):
-            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+            log('(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########'.format(url, failure))
         elif hasattr(e, 'reason'):
-            log("(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########".format(url, failure))
+            log('(getUrl) ERROR - ERROR - ERROR : ########## {0} === {1} ##########'.format(url, failure))
         if critical:
-            kodiutils.notification("ERROR GETTING URL", failure)
+            kodiutils.notification('ERROR GETTING URL', failure)
             return sys.exit(0)
         else:
-            return ""
+            return ''
+    except URLError as e:
+        kodiutils.notification('ERROR GETTING URL', str(e))
+        if critical:
+            return sys.exit(0)
+        else:
+            return ''
 
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
@@ -931,66 +1042,116 @@ def get_url(url, headers={}, cache=False, critical=False):
         ids.set_livestream_config_cache(url, data, request.info().get('ETag'))
     return data
 
-def get_livestream_client_token(access_token="", client_location="", salt="", property_name=""):
+def get_livestream_client_token(access_token='', client_location='', salt='', property_name=''):
     token = property_name + salt + access_token + client_location
-    return "01"+hashlib.sha1(token.encode('UTF-8')).hexdigest()
+    return '01'+hashlib.sha1(token.encode('UTF-8')).hexdigest()
 
-def get_livestream_server_client_token(access_token="", client_location="", salt="", property_name="", protocols="", server_token=""):
+def get_livestream_server_client_token(access_token='', client_location='', salt='', property_name='', protocols='', server_token=''):
     token = property_name + salt + access_token + server_token + client_location + protocols
-    return "01"+hashlib.sha1(token.encode('UTF-8')).hexdigest()
+    return '01'+hashlib.sha1(token.encode('UTF-8')).hexdigest()
 
-def get_video_server_request_token(access_token="", client_location="", client_name="", video_id=0, salt=""):
+def get_video_server_request_token(access_token='', client_location='', client_name='', video_id=0, salt=''):
     token = str(video_id) + salt + access_token + client_location + salt + client_name
-    return "01"+hashlib.sha1(token.encode('UTF-8')).hexdigest()
+    return '01'+hashlib.sha1(token.encode('UTF-8')).hexdigest()
 
-def get_video_source_request_token(access_token="", client_location="", client_name="", server_id="", source_id=0, video_id=0, salt="", start="", end=""):
+def get_video_source_request_token(access_token='', client_location='', client_name='', server_id='', source_id=0, video_id=0, salt='', start='', end=''):
     token = salt + str(video_id) + access_token + server_id + client_location + str(source_id) + salt + client_name + start + end
-    return "01"+hashlib.sha1(token.encode('UTF-8')).hexdigest()
+    return '01'+hashlib.sha1(token.encode('UTF-8')).hexdigest()
 
-def get_listitem(name="", icon="", fanart="", channel={}, no_puls4=True):
-    if channel:
-        if name:
-            listitem = ListItem(name)
-        else:
-            listitem = ListItem(channel["name"])
-        listitem.setProperty('IsPlayable', 'true')
-        if no_puls4:
-            listitem.setLabel(listitem.getLabel().replace("Puls4 ", ""))
-        images = json.loads(channel["images_json"])
-        if images:
-            if "image_base" in images and images["image_base"]:
-                listitem.setArt({'icon':images["image_base"], 'thumb':images["image_base"], 'poster':images["image_base"]})
-            else:
-                listitem.setArt({'icon':images["icon_1"], 'thumb':images["icon_1"], 'poster':images["icon_1"]})
-        if "next_program" in channel:
-            if channel["next_program"] != None:
-                #'Title': channel["name"]
-                listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': channel["next_program"]["name"]+'[CR]'+(channel["next_program"]["description"] if channel["next_program"]["description"] != None else ""), 'mediatype': 'video'})
-                program_images = json.loads(channel["next_program"]["images_json"])
-                if program_images:
-                    listitem.setArt({'fanart' : program_images["image_base"]})
-            else:
-                listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'mediatype': 'video'})
-    else:
-        listitem = ListItem(name)
-        listitem.setProperty('IsPlayable', 'true')
-        listitem.setInfo(type='Video', infoLabels={'mediatype': 'video'})
-        if icon != "":
-            listitem.setArt({'icon':icon, 'thumb':icon, 'poster':icon})
-        if fanart != "":
-            listitem.setArt({'fanart':fanart})
+def get_listitem(name='', icon='', fanart=''):
+    listitem = ListItem(name)
+    listitem.setProperty('IsPlayable', 'true')
+    listitem.setInfo(type='Video', infoLabels={'mediatype': 'video'})
+    if icon != '':
+        listitem.setArt({'icon':icon, 'thumb':icon, 'poster':icon})
+    if fanart != '':
+        listitem.setArt({'fanart':fanart})
     return listitem
 
 def get_channel(json_data, channel):
     if json_data:
-        for channels in json_data["account"]["channels"]:
-            if channels["ui_tag"] == channel:
+        for channels in json_data['account']['channels']:
+            if channels['ui_tag'] == channel:
                 return channels
     return {}
+
+def get_query(url):
+    #log(u'{0}'.format(url))
+    source = urlparse(url)
+    log(u'{0}'.format(source))
+    return parse_qs(source[4], keep_blank_values=True)
+
+def get_channel_icon(channelId):
+    result = get_url(ids.channel_icon_url.format(channelId = channelId), headers=ids.api_headers)
+    icon = ''
+    if result:
+        result = json.loads(result)
+        try:
+            icon = result['png']['tv']['1']
+        except:
+            icon = result['png']['default']['1']
+    return icon
+
+def get_livestream(channelId, title, id):
+    listitem =ListItem(title)
+    listitem.setProperty('IsPlayable', 'true')
+    icon = get_channel_icon(channelId)
+    listitem.setArt({'icon': icon, 'thumb': icon, 'poster': icon})
+    
+    result = get_url(ids.api_epg_url + ids.api_epg_from.format(channelId = channelId, start = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')), headers=ids.api_headers)
+    
+    if result:
+        epg = json.loads(result)
+        if len(epg['response']['data']) > 0:
+            #'Title': channel['name']
+            next = epg['response']['data'][0]
+            if 'title' in next and next['title'] != None:
+                if '\n' in next['title']:
+                    name = next['title'].replace('\n', ': ')
+                else:
+                    name = next['title']
+            elif 'tvShow' in next and next['tvShow'] != None and 'title' in next['tvShow'] and next['tvShow']['title'] != None:
+                name = next['tvShow']['title']
+            
+            description = ''
+            if 'description' in next and next['description'] != None:
+                description = next['description']
+            tvShow = ''
+            if 'tvShow' in next and next['tvShow'] != None and 'title' in next['tvShow'] and next['tvShow']['title'] != None:
+                tvShow = next['tvShow']['title']
+                if name != tvShow:
+                    name = tvShow + ': ' + name
+            
+            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'Plot': name + '[CR]'+ description, 'mediatype': 'episode'})
+            if 'images' in next and next['images'] != None and len(next['images']) > 1:
+                listitem.setArt({'fanart' : ids.api_image_url.format(next['images'][0]['url'])})
+        else:
+            listitem.setInfo(type='Video', infoLabels={'Title': listitem.getLabel(), 'mediatype': 'video'})
+    return (plugin.url_for(play_livestream, id), listitem)
+
+def add_default_streams():
+    for stream in ids.default_streams:
+        addDirectoryItem(plugin.handle, url=plugin.url_for(
+            play_livestream, stream[0]), listitem=get_listitem(stream[1]))
+    for stream in ids.streams_pro7sat1:
+        addDirectoryItem(plugin.handle, url=plugin.url_for(
+            play_livestream, stream[0]+'_at'), listitem=get_listitem(stream[1]+' AT'))
+
+@plugin.route('/category/by_category/id=<id>')
+def legacy_category(id):
+    result = get_url(ids.legacy_categories_request_url.format(id=id))
+    if result:
+        data = json.loads(result)
+        if 'category' in data and data['category'] != None and 'external_id' in data['category'] and data['category']['external_id'] != None:
+            if '_' in data['category']['external_id']:
+                data['category']['external_id'] = data['category']['external_id'].split('_')[1]
+            addDirectoryItem(plugin.handle, url=plugin.url_for(show_tvshow, id = data['category']['external_id']), listitem=ListItem(kodiutils.get_string(32040)), isFolder=True)
+    add_favorites_folder(plugin.url_for(legacy_category, id), '', '', '')
+    endOfDirectory(plugin.handle)
 
 def run():
     plugin.run()
 
 def log(info):
-    if kodiutils.get_setting_as_bool("debug"):
+    if kodiutils.get_setting_as_bool('debug'):
         logger.warning(info)

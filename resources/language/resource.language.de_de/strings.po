@@ -35,8 +35,8 @@ msgid "nothing in here"
 msgstr "hier ist nichts"
 
 msgctxt "#32005"
-msgid "From [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
-msgstr "Vom [COLOR chartreuse]{0:s}[/COLOR][CR][CR]"
+msgid "From [COLOR chartreuse]{0:s}[/COLOR][CR]"
+msgstr "Vom [COLOR chartreuse]{0:s}[/COLOR][CR]"
 
 msgctxt "#32006"
 msgid "Last Entry: [COLOR deepskyblue]{0:s}[/COLOR]"
@@ -131,6 +131,54 @@ msgctxt "#32028"
 msgid "Switzerland"
 msgstr "Schweiz"
 
+msgctxt "#32029"
+msgid "Available until: [COLOR chartreuse]{0:s}[/COLOR][CR]"
+msgstr "Verfügbar bis: [COLOR chartreuse]{0:s}[/COLOR][CR]"
+
+msgctxt "#32030"
+msgid "FULL EPISODES"
+msgstr "GANZE FOLGEN"
+
+msgctxt "#32031"
+msgid "CLIPS"
+msgstr "CLIPS"
+
+msgctxt "#32032"
+msgid "BONUS"
+msgstr "BONUS"
+
+msgctxt "#32033"
+msgid "PREVIEW"
+msgstr "VORSCHAU"
+
+msgctxt "#32034"
+msgid "Popular Shows"
+msgstr "Beliebteste Sendungen"
+
+msgctxt "#32035"
+msgid "Search by Genre"
+msgstr "Suche nach Genre"
+
+msgctxt "#32036"
+msgid "Search by Channel"
+msgstr "Suche nach Sender"
+
+msgctxt "#32037"
+msgid "All Genres"
+msgstr "Alle Genres"
+
+msgctxt "#32038"
+msgid "Over 500 entries"
+msgstr "Mehr als 500 Enträge"
+
+msgctxt "#32039"
+msgid "Some entries might be missing"
+msgstr "Einige Einträge fehlen vielleicht"
+
+msgctxt "#32040"
+msgid "new location"
+msgstr "neue Position"
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -152,8 +200,8 @@ msgid "alternative format for DRM content (720p with widevine)"
 msgstr "alternatives Format für DRM Inhalt (720p mit Widevine)"
 
 msgctxt "#32106"
-msgid "limit some categories to 20 items per page"
-msgstr "Limitiere einige Kategorien auf 20 Einträge pro Seite"
+msgid "show warning if entrie limit is reached"
+msgstr "Warnung Anzeigen, wenn das Eintrag Limit erreicht wurde"
 
 msgctxt "#32107"
 msgid "Sorting of Episodes"

@@ -4,7 +4,7 @@
     <setting id="non_drm_format" type="select" label="32110" lvalues="32111|32112|32113|32114"/>
     <setting id="drm" type="enum" label="32102" lvalues="32103|32104"/>
     <setting id="oldformat" enable="eq(-1,0)" type="bool" label="32105" default="true"/>
-    <setting id="limitlist" type="bool" label="32106" default="false"/>
     <setting id="sort" type="select" label="32107" lvalues="32108|32109"/>
     <setting id="keep_episode_number" type="bool" label="32115" default="true"/>
+    <setting id="limit_warning" type="bool" label="32106" default="true"/>
 </settings>

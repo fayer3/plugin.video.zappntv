@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zappntv" name="Zappn TV" version="1.2.5" provider-name="fayer3">
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.3.0" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
         <import addon="script.module.inputstreamhelper" version="0.3.5"/>
+        <import addon="script.module.pytz"/>
+        <import addon="script.module.tzlocal"/>
+        <import addon="script.module.html2text"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
@@ -23,17 +26,8 @@
         <website>https://zappn.tv/</website>
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
-        <news>- Möglichkeit hinzugefügt, Serien über Rechtsklick zu favoriten hinzuzufügen
-- Suche auf Betriebsystemen mit Multiprozess unterstützung beschleunigt (alles außer Android)
-1.2.2:
-- pfade für neue plugin routing addon angepasst, zerstört leider alte gespeicherte Favoriten, diese müssen neu hinzugefügt werden.
-1.2.3:
-- hinzufügen von favoriten repariert.
-1.2.4:
-- Neue Sender Hinzugefügt.
-- Abspielen von livestreams mit Python3 repariert.
-1.2.5:
-- Livestream Abschnitt behoben, wenn ein Stream kein Epg hat.</news>
+        <news>1.3.0: update auf neue API.
+- Bei Favoriten von älteren Versionen wird ein "Legacy" hinweis angezeigt. Solange die alte Api noch funktionert, und die Sendung dort vorhanden war, wird ein Link auf die neue Api erstellt.</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>
