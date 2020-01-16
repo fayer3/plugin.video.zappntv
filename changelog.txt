@@ -47,3 +47,6 @@ v1.2.5:
 - fix livestream category, if a stream has no epg.
 v1.3.0: update to new API
 - favourites of older versions are now marked with "Legacy". As long as the old Api works and that show is available there, a link to the new API is created.
+v1.3.1:
+- fix error with single threading
+- add minimum version for dependencies, maybe fixes automatic installation

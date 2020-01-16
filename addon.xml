@@ -4,9 +4,9 @@
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
         <import addon="script.module.inputstreamhelper" version="0.3.5"/>
-        <import addon="script.module.pytz"/>
-        <import addon="script.module.tzlocal"/>
-        <import addon="script.module.html2text"/>
+        <import addon="script.module.pytz" version="2014.2"/>
+        <import addon="script.module.tzlocal" version="2.0.0"/>
+        <import addon="script.module.html2text" version="2015.6.21"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
@@ -27,7 +27,10 @@
         <email>fb4472 (at) aon.at</email>
         <source>https://github.com/fayer3/plugin.video.zappntv</source>
         <news>1.3.0: update auf neue API.
-- Bei Favoriten von älteren Versionen wird ein "Legacy" hinweis angezeigt. Solange die alte Api noch funktionert, und die Sendung dort vorhanden war, wird ein Link auf die neue Api erstellt.</news>
+- Bei Favoriten von älteren Versionen wird ein "Legacy" hinweis angezeigt. Solange die alte Api noch funktionert, und die Sendung dort vorhanden war, wird ein Link auf die neue Api erstellt.
+1.3.1:
+- fehler mit single Threading behoben
+- Abhängigkeiten minimum Version hinzugefügt, behebt vielleicht automatische Installation</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

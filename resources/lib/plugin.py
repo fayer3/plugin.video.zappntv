@@ -171,7 +171,7 @@ def show_category(category_id):
                     pool.join()
             else:
                 for brand in channels['response']['data']:
-                    streams.update(get_livestream(brand['channelId'], brand['title'], brand['id']))
+                    streams.append(get_livestream(brand['channelId'], brand['title'], brand['id']))
             addDirectoryItems(plugin.handle, streams)
         else:
             kodiutils.notification('ERROR GETTING LIVESTREAM INFO', 'using saved values')
