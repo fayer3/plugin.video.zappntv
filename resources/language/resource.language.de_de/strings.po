@@ -99,7 +99,7 @@ msgid "'{0}' is not installed"
 msgstr "'{0}' ist nicht installiert"
 
 msgctxt "#32021"
-msgid "'inputstream.adaptive' is failed to install. Would you like to switch to a format that doesn't require that?"
+msgid "'inputstream.adaptive' failed to install. Would you like to switch to a format that doesn't require that?"
 msgstr "Die Installation von 'inputstream.adaptive' schlug fehl. Willst du auf ein Format wechseln, welches dies nicht benötigt?"
 
 msgctxt "#32022"
@@ -116,8 +116,7 @@ msgstr "Version '2.2.2' oder höher wird benötigt, um DRM geschützte Inhalt da
 
 msgctxt "#32025"
 msgid "DRM content requires Kodi 18.0"
-msgstr " Für DRM Inhalte wird Kodi 18.0 benötigt"
-
+msgstr "Für DRM Inhalte wird Kodi 18.0 benötigt"
 
 msgctxt "#32026"
 msgid "Austria"
@@ -179,6 +178,7 @@ msgctxt "#32040"
 msgid "new location"
 msgstr "neue Position"
 
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -192,8 +192,8 @@ msgid "WIDEVINE"
 msgstr ""
 
 msgctxt "#32104"
-msgid "PLAYREADY (Android only)"
-msgstr "PLAYREADY (nur Android)"
+msgid "PLAYREADY with dash (Android only)"
+msgstr "PLAYREADY mit dash (nur Android)"
 
 msgctxt "#32105"
 msgid "alternative format for DRM content (720p with widevine)"
@@ -238,3 +238,7 @@ msgstr "video (niedrigere Qualität)"
 msgctxt "#32115"
 msgid "keep season and episode number in video title"
 msgstr "behalte Staffel und Episoden Nummer im Videotitel"
+
+msgctxt "#32116"
+msgid "PLAYREADY with SmoothStreaming (Android only)"
+msgstr "PLAYREADY mit SmoothStreaming (nur Android)"

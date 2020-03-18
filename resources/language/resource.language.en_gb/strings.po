@@ -99,7 +99,7 @@ msgid "inputstream.adaptive' is not installed"
 msgstr ""
 
 msgctxt "#32021"
-msgid "'inputstream.adaptive' is failed to install. Would you like to switch to a format that doesn't require that?"
+msgid "'inputstream.adaptive' failed to install. Would you like to switch to a format that doesn't require that?"
 msgstr ""
 
 msgctxt "#32022"
@@ -178,6 +178,7 @@ msgctxt "#32040"
 msgid "new location"
 msgstr ""
 
+
 msgctxt "#32101"
 msgid "Debug"
 msgstr ""
@@ -191,7 +192,7 @@ msgid "WIDEVINE"
 msgstr ""
 
 msgctxt "#32104"
-msgid "PLAYREADY (Android only)"
+msgid "PLAYREADY with dash (Android only)"
 msgstr ""
 
 msgctxt "#32105"
@@ -236,4 +237,8 @@ msgstr ""
 
 msgctxt "#32115"
 msgid "keep season and episode number in video title"
+msgstr ""
+
+msgctxt "#32116"
+msgid "PLAYREADY with SmoothStreaming (Android only)"
 msgstr ""

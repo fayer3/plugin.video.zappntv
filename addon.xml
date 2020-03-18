@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zappntv" name="Zappn TV" version="1.3.1" provider-name="fayer3">
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.3.2" provider-name="fayer3">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -30,7 +30,14 @@
 - Bei Favoriten von älteren Versionen wird ein "Legacy" hinweis angezeigt. Solange die alte Api noch funktionert, und die Sendung dort vorhanden war, wird ein Link auf die neue Api erstellt.
 1.3.1:
 - fehler mit single Threading behoben
-- Abhängigkeiten minimum Version hinzugefügt, behebt vielleicht automatische Installation</news>
+- Abhängigkeiten minimum Version hinzugefügt, behebt vielleicht automatische Installation
+1.3.2:
+- Livestreams von ORF III und ORF Sport+ hinzugefügt
+- alternatives DRM Format für widevine ist nun standardmäßig deaktiviert, weil es scheinbar nicht mehr verfügbar ist.
+  Ist es dennoch aktiviert, wird versucht es abzurufen, bei Fehlschlag wird auf das standard Format zurrückgegriffen.
+- Versuch Playready support zu repariert.
+  - auswahl zwishen DASH und SmoothStreaming. SmoothStreaming hat zwar die bessere Qualität, funktioniert momentan aber nicht.
+</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>

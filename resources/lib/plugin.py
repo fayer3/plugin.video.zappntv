@@ -725,12 +725,15 @@ def play_livestream(livestream_id):
             xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
             setResolvedUrl(plugin.handle, False, ListItem(label='none'))
         else:
-            playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls['urls']['dash'][drm_name]['url']+'|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1')
+            playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls['urls']['dash'][drm_name]['url']+'|User-Agent=' + ids.user_agent_live)
             playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
             playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
             playitem.setProperty('inputstream.adaptive.license_type', drm)
             playitem.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
-            playitem.setProperty('inputstream.adaptive.license_key', urls['urls']['dash'][drm_name]['drm']['licenseAcquisitionUrl'] + '?token=' + urls['urls']['dash'][drm_name]['drm']['token'] +'|User-Agent=vvs-native-android/1.0.10 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1' +'|R{SSM}|')
+            if (drm == 'com.microsoft.playready'):
+                playitem.setProperty('inputstream.adaptive.license_key', urls['urls']['dash'][drm_name]['drm']['licenseAcquisitionUrl'] + '?token=' + urls['urls']['dash'][drm_name]['drm']['token'] +'|User-Agent=' + ids.user_agent_live + '&Content-Type=text/xml' +'|R{SSM}|')
+            else:
+                playitem.setProperty('inputstream.adaptive.license_key', urls['urls']['dash'][drm_name]['drm']['licenseAcquisitionUrl'] + '?token=' + urls['urls']['dash'][drm_name]['drm']['token'] +'|User-Agent=' + ids.user_agent_live +'|R{SSM}|')
             setResolvedUrl(plugin.handle, True, playitem)
     else:
         kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
@@ -739,7 +742,7 @@ def play_livestream(livestream_id):
     
 @plugin.route('/category/video/<video_id>')
 @plugin.route('/category/video/<video_id>/<channel>')
-def play_video(video_id, channel=''):
+def play_video(video_id, channel='', disable_old_format=False):
     # remove channel number if available
     if '_' in video_id:
         video_id = video_id.split('_')[1]
@@ -762,20 +765,20 @@ def play_video(video_id, channel=''):
     sources_request = json.loads(get_url(sources_request_url, critical=True))
     log('sources_request: ' + str(sources_request))
     protected = sources_request[0]['is_protected']
-    mpd_id = 0
-    m3u8_id = 0
-    ism_id = 0
-    mp4_id = 0
+    mpd_id = []
+    m3u8_id = []
+    ism_id = []
+    mp4_id = []
     protocol = ''
     for source in sources_request[0]['sources']:
         if source['mimetype'] == 'text/xml':
-            ism_id = source['id']
+            ism_id.append(source['id'])
         if source['mimetype'] == 'application/x-mpegURL':
-            m3u8_id = source['id']
+            m3u8_id.append(source['id'])
         if source['mimetype'] == 'application/dash+xml':
-            mpd_id = source['id']
+            mpd_id.append(source['id'])
         if source['mimetype'] == 'video/mp4':
-            mp4_id = source['id']
+            mp4_id.append(source['id'])
     drm = None
     if not protected:
         if kodiutils.get_setting_as_int('non_drm_format') == 0:
@@ -793,6 +796,11 @@ def play_video(video_id, channel=''):
             protocol = 'mpd'
             drm_name = 'widevine'
             drm = 'com.widevine.alpha'
+        elif kodiutils.get_setting('drm') == '1':
+            source_id = mpd_id
+            protocol = 'mpd'
+            drm_name = 'playready'
+            drm = 'com.microsoft.playready'
         else:
             source_id = ism_id
             protocol = 'ism'
@@ -812,26 +820,36 @@ def play_video(video_id, channel=''):
 
     start = ''
     end = ''
-    if protected and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat'):
+    if protected and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
         start = '0'
         end = '999999999'
+    source_url_request = {}
+    for s_id in source_id:
+        source_url_request_token = get_video_source_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], server_id= server_id, source_id=s_id, video_id=video_id, salt=mdsV2['salt'], start=start, end=end)
+        source_url_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources/url?access_token=%s&client_id=%s&client_location=null&client_name=%s&secure_delivery=true&server_id=%s&source_ids=%s' % (video_id, mdsV2['accessToken'], source_url_request_token, mdsV2['clientName'], server_id, s_id)
 
-    source_url_request_token = get_video_source_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], server_id= server_id, source_id=source_id, video_id=video_id, salt=mdsV2['salt'], start=start, end=end)
-    source_url_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources/url?access_token=%s&client_id=%s&client_location=null&client_name=%s&secure_delivery=true&server_id=%s&source_ids=%s' % (video_id, mdsV2['accessToken'], source_url_request_token, mdsV2['clientName'], server_id, source_id)
+        if protected and kodiutils.get_setting('drm') == '0'and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
+            source_url_request_url += '&subclip_start=0&subclip_end=999999999'
 
-    if protected and kodiutils.get_setting('drm') == '0'and kodiutils.get_setting_as_bool('oldformat'):
-        source_url_request_url += '&subclip_start=0&subclip_end=999999999'
-
-    source_url_request = json.loads(get_url(source_url_request_url, critical=True))
-    if not 'status_code' in source_url_request or source_url_request['status_code'] != 0:
-        log('error on video request: ' + str(source_url_request))
-        return sys.exit(0)
+        source_url_request = json.loads(get_url(source_url_request_url, critical=True))
+        if not 'status_code' in source_url_request or source_url_request['status_code'] != 0:
+            log('error on video request: ' + str(source_url_request))
+            if protected and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
+                play_video(video_id, channel=channel, disable_old_format=True)
+                return
+            kodiutils.notification('ERROR', 'code: {0}'.format(source_url_request['status_code']))
+            return sys.exit(0)
+        if protected:
+            if drm_name == source_url_request['drm']['type']:
+                break
+        else:
+            break
 
     playitem = ListItem('none')
     log('selected non drm format: ' + kodiutils.get_setting('non_drm_format'))
     log('media url: ' + source_url_request['sources'][0]['url'])
     if not protected and (kodiutils.get_setting_as_int('non_drm_format') == 2 or kodiutils.get_setting_as_int('non_drm_format') == 3):
-        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36')
+        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=' + ids.user_agent_video)
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         is_helper = None
@@ -865,12 +883,16 @@ def play_video(video_id, channel=''):
                 xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
                 setResolvedUrl(plugin.handle, False, ListItem(label='none'))
             else:
-                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36')
+                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=' + ids.user_agent_video)
                 playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
                 playitem.setProperty('inputstream.adaptive.manifest_type', protocol)
                 if protected:
+                    log('license url: {0}?token={1}'.format(source_url_request['drm']['licenseAcquisitionUrl'], source_url_request['drm']['token']))
                     playitem.setProperty('inputstream.adaptive.license_type', drm)
-                    playitem.setProperty('inputstream.adaptive.license_key', source_url_request['drm']['licenseAcquisitionUrl'] + '?token=' + source_url_request['drm']['token'] +'|User-Agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36' +'|R{SSM}|')
+                    if (drm == 'com.microsoft.playready'):
+                        playitem.setProperty('inputstream.adaptive.license_key', source_url_request['drm']['licenseAcquisitionUrl'] + '?token=' + source_url_request['drm']['token'] +'|User-Agent=' + ids.user_agent_video + '&Content-Type=text/xml' +'|R{SSM}|')
+                    else:
+                        playitem.setProperty('inputstream.adaptive.license_key', source_url_request['drm']['licenseAcquisitionUrl'] + '?token=' + source_url_request['drm']['token'] +'|User-Agent=' + ids.user_agent_video +'|R{SSM}|')
                 setResolvedUrl(plugin.handle, True, playitem)
         else:
             if drm:
@@ -1033,9 +1055,9 @@ def get_url(url, headers={}, cache=False, critical=False):
         # decompress content
         buffer = StringIO(request.read())
         deflatedContent = gzip.GzipFile(fileobj=buffer)
-        data = deflatedContent.read()
+        data = deflatedContent.read().decode('utf-8')
     else:
-        data = request.read()
+        data = request.read().decode('utf-8')
 
     if cache:
         data = xxtea.decryptBase64StringToStringss(data, ids.xxtea_key)
@@ -1153,5 +1175,5 @@ def run():
     plugin.run()
 
 def log(info):
-    if kodiutils.get_setting_as_bool('debug'):
+    if kodiutils.get_setting_as_bool('debug') or xbmc.getCondVisibility('System.GetBool(debug.showloginfo)'):
         logger.warning(info)

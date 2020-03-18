@@ -51,6 +51,8 @@ live_channel_ids = {
     u'popuptv2': u'popuptv2',
     u'orf1': u'orf1-at',
     u'orf2': u'orf2-at',
+    u'orfiii': u'orf3-at',
+    u'orfsportplus': u'orf-sport-plus-at',
     u'atv': u'atv-24x7',
     u'atv2': u'atv2-24x7'
 }
@@ -93,6 +95,8 @@ xxtea_key = u'354337383338333635433738363436363543373836363338323635433738333036
 
 default_streams = [('orf1','ORF 1'),
     ('orf2','ORF 2'),
+    ('orfiii','ORF III'),
+    ('orfsportplus','ORF Sport +'),
     ('puls4_at','PULS 4'),
     ('popuptv','Puls 24'),
     ('atv','ATV'),
@@ -113,7 +117,10 @@ streams_pro7sat1 = [('kabeleins','Kabel eins'),
 
 legacy_categories_request_url =  u'https://admin.applicaster.com/v12/accounts/357/broadcasters/410/categories/{id}.json?&api[ver]=1.2&api[bundle]=at.zappn&api[bver]=2.0.3&api[os_type]=android&api[os_version]=25&api[store]=android'
 
-overview_url = u'https://assets-secure.applicaster.com/zapp/accounts/5818cf82279a4a000ff1b6aa/apps/at.zappn/google_play/2.0.3/rivers/rivers.json'
+overview_url = u'https://assets-secure.applicaster.com/zapp/accounts/5818cf82279a4a000ff1b6aa/apps/at.zappn/google_play/2.0.5/rivers/rivers.json'
+
+user_agent_video = u'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'
+user_agent_live = u'vvs-native-android/2.0.5 (Linux;Android 7.1.1) ExoPlayerLib/2.8.1'
 
 api_url = u'https://middleware.p7s1.io/zappn/v1'
 api_limit = 500
@@ -153,8 +160,14 @@ config_tag = {}
 
 def get_livestream_config_url(livestream_id):
     livestream_id=convert_channel(livestream_id)
-    if livestream_id == u'orf1' or livestream_id == u'orf2' or livestream_id == u'kronehittv':
+    if u'orf' in livestream_id or livestream_id == u'kronehittv':
         return live_config_url+live_config_ids[u'orf']
+    elif u'kabeleins' in livestream_id:
+        return live_config_url+live_config_ids[livestream_id.replace(u'kabeleins', u'kabel1')]
+    elif u'prosiebenmaxx' in livestream_id:
+        return live_config_url+live_config_ids[livestream_id.replace(u'prosiebenmaxx', u'prosieben_maxx')]
+    elif u'sat1gold' in livestream_id:
+        return live_config_url+live_config_ids[livestream_id.replace(u'sat1gold', u'sat1_gold')]
     elif (livestream_id == u'atv' 
         or livestream_id == u'atv2' 
         or livestream_id == u'puls4_at' 
@@ -162,14 +175,9 @@ def get_livestream_config_url(livestream_id):
         or livestream_id == u'popuptv2' 
         or livestream_id == u'servustv' 
         or livestream_id == u'schautv' 
-        or livestream_id == u'ric'):
+        or livestream_id == u'ric'
+        or livestream_id not in live_config_ids):
         return live_config_url+live_config_ids[u'puls4_and_atv_at']
-    elif u'kabeleins' in livestream_id:
-        return live_config_url+live_config_ids[livestream_id.replace(u'kabeleins', u'kabel1')]
-    elif u'prosiebenmaxx' in livestream_id:
-        return live_config_url+live_config_ids[livestream_id.replace(u'prosiebenmaxx', u'prosieben_maxx')]
-    elif u'sat1gold' in livestream_id:
-        return live_config_url+live_config_ids[livestream_id.replace(u'sat1gold', u'sat1_gold')]
     else:
         return live_config_url+live_config_ids[livestream_id]
 

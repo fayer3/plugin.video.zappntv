@@ -50,3 +50,9 @@ v1.3.0: update to new API
 v1.3.1:
 - fix error with single threading
 - add minimum version for dependencies, maybe fixes automatic installation
+v1.3.2:
+- add livestreams for ORF III and ORF Sport+
+- alternative DRM format for widevine is now disabled by default, because it seems like it is not available any more.
+  If it is still activated, a request is attempted, if failed the default format is used instead.
+- try to fix Playready support
+  - choose between DASH and SmoothStreaming. SmoothStreaming should give better quality, but doesn't work currently.
