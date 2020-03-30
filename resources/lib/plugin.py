@@ -610,23 +610,42 @@ def show_tvshow_videos(id, category_query):
                     
             log(cast)
             log(director)
-            if 'airdates' in video['episode'] and video['episode']['airdates'] != None and len(video['episode']['airdates']) > 0 and video['episode']['airdates'][0]['date'] != 0:
-                try:
-                    local_tz = tzlocal.get_localzone()
-                    airDATES = datetime(1970, 1, 1) + timedelta(seconds=video['episode']['airdates'][0]['date'])
-                    airDATES = pytz.utc.localize(airDATES)
-                    airDATES = airDATES.astimezone(local_tz)
-                    airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
-                    airDATE = airDATES.strftime('%d.%m.%Y')
-                except: pass
-            if 'visibilities' in video and video['visibilities'] != None and len(video['visibilities']) > 0 and video['visibilities'][0]['endsAt'] != None:
-                try:
-                    local_tz = tzlocal.get_localzone()
-                    endDATES = datetime(1970, 1, 1) + timedelta(seconds=video['visibilities'][0]['endsAt'])
-                    endDATES = pytz.utc.localize(endDATES)
-                    endDATES = endDATES.astimezone(local_tz)
-                    endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
-                except: pass
+            if 'visibilities' in video and video['visibilities'] != None and len(video['visibilities']) > 0:
+                start = None
+                end = None
+                for visibility in video['visibilities']:
+                    if visibility['endsAt'] != None and visibility['startsAt'] != None:
+                        if start == None or visibility['startsAt'] > start:
+                            start = visibility['startsAt']
+                        if end == None or visibility['endsAt'] > end:
+                            end = visibility['endsAt']
+                if end != None:
+                    try:
+                        local_tz = tzlocal.get_localzone()
+                        endDATES = datetime(1970, 1, 1) + timedelta(seconds=end)
+                        endDATES = pytz.utc.localize(endDATES)
+                        endDATES = endDATES.astimezone(local_tz)
+                        endTIMES = endDATES.strftime('%d.%m.%Y - %H:%M')
+                    except: pass
+                if start != None:
+                    try:
+                        local_tz = tzlocal.get_localzone()
+                        airDATES = datetime(1970, 1, 1) + timedelta(seconds=start)
+                        airDATES = pytz.utc.localize(airDATES)
+                        airDATES = airDATES.astimezone(local_tz)
+                        airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+                        airDATE = airDATES.strftime('%d.%m.%Y')
+                    except: pass
+            if airDATE != None:
+                if 'airdates' in video['episode'] and video['episode']['airdates'] != None and len(video['episode']['airdates']) > 0 and video['episode']['airdates'][0]['date'] != 0:
+                    try:
+                        local_tz = tzlocal.get_localzone()
+                        airDATES = datetime(1970, 1, 1) + timedelta(seconds=video['episode']['airdates'][0]['date'])
+                        airDATES = pytz.utc.localize(airDATES)
+                        airDATES = airDATES.astimezone(local_tz)
+                        airTIMES = airDATES.strftime('%d.%m.%Y - %H:%M')
+                        airDATE = airDATES.strftime('%d.%m.%Y')
+                    except: pass
             if airTIMES != u'': Note_1 = kodiutils.get_string(32005).format(str(airTIMES))
             if endTIMES != u'': Note_1 += kodiutils.get_string(32029).format(str(endTIMES))
             if Note_1 != '': Note_1 += '[CR]'
