@@ -242,3 +242,11 @@ msgstr "behalte Staffel und Episoden Nummer im Videotitel"
 msgctxt "#32116"
 msgid "PLAYREADY with SmoothStreaming (Android only)"
 msgstr "PLAYREADY mit SmoothStreaming (nur Android)"
+
+msgctxt "#32117"
+msgid "request video like the website instead of the app(slower)"
+msgstr "Frage videos wie die Webseite ab, anstatt wie die App(langsamer)"
+
+msgctxt "#32118"
+msgid "always use the puls4 key for VOD(sometimes better quality)"
+msgstr "Verwende immer den Puls4 Key für die Mediathek[CR](manchmal bessere Qualität)"

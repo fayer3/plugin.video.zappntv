@@ -766,120 +766,60 @@ def play_video(video_id, channel='', disable_old_format=False):
     if '_' in video_id:
         video_id = video_id.split('_')[1]
     config_url = ''
+    racoon = False
     if channel == 'All Channels Feed' or channel == '':
         # no channel info guess by id
-        if not video_id.isdigit():
+        if not video_id.isdigit() or kodiutils.get_setting_as_bool('always_puls4'):
             #probalby a video from puls4 or atv
             config_url = ids.get_livestream_config_url('puls4_and_atv_at')
         else:
-            config_url = ids.get_livestream_config_url('austrian_tv')
+            if kodiutils.get_setting_as_bool('use_racoon'):
+                config_url = ids.get_livestream_config_url('prosieben_maxx_at')
+                racoon = True
+            else:
+                config_url = ids.get_livestream_config_url('austrian_tv')
     else:
-        if channel == 'PULS 4' or channel == 'ATV':
+        if channel == 'PULS 4' or channel == 'ATV' or kodiutils.get_setting_as_bool('always_puls4'):
             config_url = ids.get_livestream_config_url('puls4_and_atv_at')
         else:
             config_url = ids.get_livestream_config_url('austrian_tv')
-    config = json.loads(get_url(config_url, cache=True, critical=True))
-    mdsV2 = config['mdsclient']['mdsV2']
-    sources_request_url = mdsV2['baseUrl']+'vas/live/v2/videos?access_token=%s&client_location=null&client_name=%s&ids=%s' % (mdsV2['accessToken'], mdsV2['clientName'], video_id)
-    sources_request = json.loads(get_url(sources_request_url, critical=True))
-    log('sources_request: ' + str(sources_request))
-    protected = sources_request[0]['is_protected']
-    mpd_id = []
-    m3u8_id = []
-    ism_id = []
-    mp4_id = []
-    protocol = ''
-    for source in sources_request[0]['sources']:
-        if source['mimetype'] == 'text/xml':
-            ism_id.append(source['id'])
-        if source['mimetype'] == 'application/x-mpegURL':
-            m3u8_id.append(source['id'])
-        if source['mimetype'] == 'application/dash+xml':
-            mpd_id.append(source['id'])
-        if source['mimetype'] == 'video/mp4':
-            mp4_id.append(source['id'])
-    drm = None
-    if not protected:
-        if kodiutils.get_setting_as_int('non_drm_format') == 0:
-            source_id = mpd_id
-            protocol = 'mpd'
-        elif kodiutils.get_setting_as_int('non_drm_format') == 3:
-            source_id = mp4_id
-            protocol = 'mp4'
-        else:
-            source_id = m3u8_id
-            protocol = 'hls'
+    config = {}
+    
+    data = None
+    
+    if not racoon:
+        config = json.loads(get_url(config_url, cache=True, critical=True))
+        data = get_source(config, video_id, disable_old_format)
+        if data =='disable_old_format':
+            play_video(video_id, channel=channel, disable_old_format=True)
+            return
     else:
-        if kodiutils.get_setting('drm') == '0':
-            source_id = mpd_id
-            protocol = 'mpd'
-            drm_name = 'widevine'
-            drm = 'com.widevine.alpha'
-        elif kodiutils.get_setting('drm') == '1':
-            source_id = mpd_id
-            protocol = 'mpd'
-            drm_name = 'playready'
-            drm = 'com.microsoft.playready'
-        else:
-            source_id = ism_id
-            protocol = 'ism'
-            drm_name = 'playready'
-            drm = 'com.microsoft.playready'
-
-    if protected and LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
-        log('version is: ' + xbmc.getInfoLabel('System.BuildVersion'))
-        kodiutils.notification('ERROR', kodiutils.get_string(32025))
-        setResolvedUrl(plugin.handle, False, ListItem('none'))
+        config_data = get_url(config_url, cache=True, critical=False)
+        if config_data:
+            config = json.loads(config_data)
+        data = get_source_racoon(config, video_id)
+    
+    playitem = ListItem('none')
+    
+    if data == None:
+        setResolvedUrl(plugin.handle, False, playitem)
         return
 
-    server_request_token = get_video_server_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], video_id=video_id, salt=mdsV2['salt'])
-    server_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources?access_token=%s&client_id=%s&client_location=null&client_name=%s' % (video_id, mdsV2['accessToken'], server_request_token, mdsV2['clientName'])
-    server_request = json.loads(get_url(server_request_url, critical=True))
-    server_id = server_request['server_id']
-
-    start = ''
-    end = ''
-    if protected and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
-        start = '0'
-        end = '999999999'
-    source_url_request = {}
-    for s_id in source_id:
-        source_url_request_token = get_video_source_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], server_id= server_id, source_id=s_id, video_id=video_id, salt=mdsV2['salt'], start=start, end=end)
-        source_url_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources/url?access_token=%s&client_id=%s&client_location=null&client_name=%s&secure_delivery=true&server_id=%s&source_ids=%s' % (video_id, mdsV2['accessToken'], source_url_request_token, mdsV2['clientName'], server_id, s_id)
-
-        if protected and kodiutils.get_setting('drm') == '0'and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
-            source_url_request_url += '&subclip_start=0&subclip_end=999999999'
-
-        source_url_request = json.loads(get_url(source_url_request_url, critical=True))
-        if not 'status_code' in source_url_request or source_url_request['status_code'] != 0:
-            log('error on video request: ' + str(source_url_request))
-            if protected and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
-                play_video(video_id, channel=channel, disable_old_format=True)
-                return
-            kodiutils.notification('ERROR', 'code: {0}'.format(source_url_request['status_code']))
-            return sys.exit(0)
-        if protected:
-            if drm_name == source_url_request['drm']['type']:
-                break
-        else:
-            break
-
-    playitem = ListItem('none')
     log('selected non drm format: ' + kodiutils.get_setting('non_drm_format'))
-    log('media url: ' + source_url_request['sources'][0]['url'])
-    if not protected and (kodiutils.get_setting_as_int('non_drm_format') == 2 or kodiutils.get_setting_as_int('non_drm_format') == 3):
-        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=' + ids.user_agent_video)
+    log('media url: ' + data['video_url'])
+    if not data['protected'] and (kodiutils.get_setting_as_int('non_drm_format') == 2 or kodiutils.get_setting_as_int('non_drm_format') == 3):
+        playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=data['video_url']+'|User-Agent=' + ids.user_agent_video)
         setResolvedUrl(plugin.handle, True, playitem)
     else:
         is_helper = None
         try:
-            is_helper = inputstreamhelper.Helper(protocol, drm=drm)
+            is_helper = inputstreamhelper.Helper(data['protocol'], drm=data['drm'])
         except Exception as e:
-            if str(e) == 'UnsupportedDRMScheme' and drm == 'com.microsoft.playready':
-                is_helper = inputstreamhelper.Helper(protocol, drm=None)
+            if str(e) == 'UnsupportedDRMScheme' and data['drm'] == 'com.microsoft.playready':
+                is_helper = inputstreamhelper.Helper(data['protocol'], drm=None)
                 pass
             else:
-                kodiutils.notification('ERROR', kodiutils.get_string(32018).format(drm))
+                kodiutils.notification('ERROR', kodiutils.get_string(32018).format(data['drm']))
         #check for inputstream_addon
         inputstream_installed = False
         if is_helper:
@@ -892,30 +832,30 @@ def play_video(video_id, channel='', disable_old_format=False):
 
         if is_helper and inputstream_installed and is_helper.check_inputstream():
             version = xbmcaddon.Addon('inputstream.adaptive').getAddonInfo('version')
-            if not protected and kodiutils.get_setting_as_int('non_drm_format') == 0 and LooseVersion(version) < LooseVersion('2.2.2'):
+            if not data['protected'] and kodiutils.get_setting_as_int('non_drm_format') == 0 and LooseVersion(version) < LooseVersion('2.2.2'):
                 # inputstream to old cannot play mpd
                 # switch to hls
                 kodiutils.set_setting('non_drm_format', 1)
                 play_video(video_id, channel)
-            elif protected and LooseVersion(version) < LooseVersion('2.2.2'):
+            elif data['protected'] and LooseVersion(version) < LooseVersion('2.2.2'):
                 # inputstream to old cannot play mpd
                 xbmcgui.Dialog().ok(heading=kodiutils.get_string(32023), line1=kodiutils.get_string(32024))
                 setResolvedUrl(plugin.handle, False, ListItem(label='none'))
             else:
-                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=source_url_request['sources'][0]['url']+'|User-Agent=' + ids.user_agent_video)
+                playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=data['video_url']+'|User-Agent=' + ids.user_agent_video)
                 playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
-                playitem.setProperty('inputstream.adaptive.manifest_type', protocol)
-                if protected:
-                    log('license url: {0}?token={1}'.format(source_url_request['drm']['licenseAcquisitionUrl'], source_url_request['drm']['token']))
-                    playitem.setProperty('inputstream.adaptive.license_type', drm)
-                    if (drm == 'com.microsoft.playready'):
-                        playitem.setProperty('inputstream.adaptive.license_key', source_url_request['drm']['licenseAcquisitionUrl'] + '?token=' + source_url_request['drm']['token'] +'|User-Agent=' + ids.user_agent_video + '&Content-Type=text/xml' +'|R{SSM}|')
+                playitem.setProperty('inputstream.adaptive.manifest_type', data['protocol'])
+                if data['protected']:
+                    log('license url: {0}?token={1}'.format(data['license_url'], data['license_token']))
+                    playitem.setProperty('inputstream.adaptive.license_type', data['drm'])
+                    if (data['drm'] == 'com.microsoft.playready'):
+                        playitem.setProperty('inputstream.adaptive.license_key', data['license_url'] + '?token=' + data['license_token'] +'|User-Agent=' + ids.user_agent_video + '&Content-Type=text/xml' +'|R{SSM}|')
                     else:
-                        playitem.setProperty('inputstream.adaptive.license_key', source_url_request['drm']['licenseAcquisitionUrl'] + '?token=' + source_url_request['drm']['token'] +'|User-Agent=' + ids.user_agent_video +'|R{SSM}|')
+                        playitem.setProperty('inputstream.adaptive.license_key', data['license_url'] + '?token=' + data['license_token'] +'|User-Agent=' + ids.user_agent_video +'|R{SSM}|')
                 setResolvedUrl(plugin.handle, True, playitem)
         else:
-            if drm:
-                kodiutils.notification('ERROR', kodiutils.get_string(32019).format(drm))
+            if data['drm']:
+                kodiutils.notification('ERROR', kodiutils.get_string(32019).format(data['drm']))
                 setResolvedUrl(plugin.handle, False, playitem)
             else:
                 if xbmcgui.Dialog().yesno(heading=kodiutils.get_string(32020), line1=kodiutils.get_string(32021), line2=kodiutils.get_string(32022).format(kodiutils.get_string(32110))):
@@ -926,6 +866,179 @@ def play_video(video_id, channel='', disable_old_format=False):
                     play_video(video_id, channel)
                 else:
                     setResolvedUrl(plugin.handle, False, playitem)
+
+def get_source(config, video_id, disable_old_format):
+    data = {'video_url':'', 'protocol': '', 'protected':False, 'drm': '', 'license_url': '', 'license_token': ''}
+    mdsV2 = config['mdsclient']['mdsV2']
+    sources_request_url = mdsV2['baseUrl']+'vas/live/v2/videos?access_token=%s&client_location=null&client_name=%s&ids=%s' % (mdsV2['accessToken'], mdsV2['clientName'], video_id)
+    sources_request = json.loads(get_url(sources_request_url, critical=True))
+    log('sources_request: ' + str(sources_request))
+    data['protected'] = sources_request[0]['is_protected']
+    mpd_id = []
+    m3u8_id = []
+    ism_id = []
+    mp4_id = []
+    for source in sources_request[0]['sources']:
+        if source['mimetype'] == 'text/xml':
+            ism_id.append(source['id'])
+        if source['mimetype'] == 'application/x-mpegURL':
+            m3u8_id.append(source['id'])
+        if source['mimetype'] == 'application/dash+xml':
+            mpd_id.append(source['id'])
+        if source['mimetype'] == 'video/mp4':
+            mp4_id.append(source['id'])
+    drm = None
+    if not data['protected']:
+        if kodiutils.get_setting_as_int('non_drm_format') == 0:
+            source_id = mpd_id
+            data['protocol'] = 'mpd'
+        elif kodiutils.get_setting_as_int('non_drm_format') == 3:
+            source_id = mp4_id
+            data['protocol'] = 'mp4'
+        else:
+            source_id = m3u8_id
+            data['protocol'] = 'hls'
+    else:
+        if kodiutils.get_setting('drm') == '0':
+            source_id = mpd_id
+            data['protocol'] = 'mpd'
+            drm_name = 'widevine'
+            data['drm'] = 'com.widevine.alpha'
+        elif kodiutils.get_setting('drm') == '1':
+            source_id = mpd_id
+            data['protocol'] = 'mpd'
+            drm_name = 'playready'
+            data['drm'] = 'com.microsoft.playready'
+        else:
+            source_id = ism_id
+            data['protocol'] = 'ism'
+            drm_name = 'playready'
+            data['drm'] = 'com.microsoft.playready'
+
+    if data['protected'] and LooseVersion('18.0') > LooseVersion(xbmc.getInfoLabel('System.BuildVersion')):
+        log('version is: ' + xbmc.getInfoLabel('System.BuildVersion'))
+        kodiutils.notification('ERROR', kodiutils.get_string(32025))
+        setResolvedUrl(plugin.handle, False, ListItem('none'))
+        return None
+
+    server_request_token = get_video_server_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], video_id=video_id, salt=mdsV2['salt'])
+    server_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources?access_token=%s&client_id=%s&client_location=null&client_name=%s' % (video_id, mdsV2['accessToken'], server_request_token, mdsV2['clientName'])
+    server_request = json.loads(get_url(server_request_url, critical=True))
+    server_id = server_request['server_id']
+
+    start = ''
+    end = ''
+    if data['protected'] and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
+        start = '0'
+        end = '999999999'
+    source_url_request = {}
+    for s_id in source_id:
+        source_url_request_token = get_video_source_request_token(access_token=mdsV2['accessToken'], client_location='null', client_name=mdsV2['clientName'], server_id= server_id, source_id=s_id, video_id=video_id, salt=mdsV2['salt'], start=start, end=end)
+        source_url_request_url = mdsV2['baseUrl']+'vas/live/v2/videos/%s/sources/url?access_token=%s&client_id=%s&client_location=null&client_name=%s&secure_delivery=true&server_id=%s&source_ids=%s' % (video_id, mdsV2['accessToken'], source_url_request_token, mdsV2['clientName'], server_id, s_id)
+
+        if data['protected'] and kodiutils.get_setting('drm') == '0'and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
+            source_url_request_url += '&subclip_start=0&subclip_end=999999999'
+
+        source_url_request = json.loads(get_url(source_url_request_url, critical=True))
+        if not 'status_code' in source_url_request or source_url_request['status_code'] != 0:
+            log('error on video request: ' + str(source_url_request))
+            if data['protected'] and kodiutils.get_setting('drm') == '0' and kodiutils.get_setting_as_bool('oldformat') and not disable_old_format:
+                return 'disable_old_format'
+            kodiutils.notification('ERROR', 'code: {0}'.format(source_url_request['status_code']))
+            return sys.exit(0)
+        data['video_url'] = source_url_request['sources'][0]['url']
+        if data['protected']:
+            data['license_url'] = source_url_request['drm']['licenseAcquisitionUrl']
+            data['license_token'] = source_url_request['drm']['token']
+            if drm_name == source_url_request['drm']['type']:
+                break
+        else:
+            break
+    log('{0}'.format(data))
+    return data
+
+def get_source_racoon(config, video_id):
+    from racoonhash import RacoonHash
+    data = {'video_url':'', 'protocol': '', 'protected':False, 'drm': '', 'license_url': '', 'license_token': ''}
+    if not config:
+        config = {'racoon': { 'liveBaseUrl' : '//vas.live.p7s1video.net/2.0', 'vodBaseUrl': '//vas-v4.p7s1video.net/4.0'}}
+    config['racoon']['access_id'] = 'x_prosiebenmaxx-at'
+    config['racoon']['encryption_key'] = 'diQua9poopaetheephoogheehoocaevo'
+    config['racoon']['initializing_vector'] = 'Ahvah3pahgoophahniengeyeecaibahd'
+    
+    racoon = RacoonHash()
+    racoon.update(config['racoon']['encryption_key'] + video_id + config['racoon']['initializing_vector'] + config['racoon']['access_id']);
+    client_token =  racoon.hex();
+    
+    protocol_request = json.loads(get_url('https:'+config['racoon']['vodBaseUrl']+'/getprotocols?access_id={0}&video_id={1}&client_token={2}'.format(config['racoon']['access_id'], video_id, client_token), critical=True))
+    
+    data['protected'] = protocol_request['is_protected']
+    formatsDRM = ''
+    for key, protocol in protocol_request['protocols'].items():
+        for drm in protocol['drm']:
+            if formatsDRM == '':
+                formatsDRM += key + ':' + drm;
+            else:
+                formatsDRM += ',' + key + ':' + drm;
+    
+    server_token = protocol_request['server_token']
+    racoon.reset();
+    racoon.update(config['racoon']['encryption_key'] + video_id + config['racoon']['initializing_vector'] + config['racoon']['access_id'] + server_token + formatsDRM);
+    client_token = racoon.hex();
+    
+    urls_request = json.loads(get_url('https:'+config['racoon']['vodBaseUrl']+'/geturls?server_token={0}&access_id={1}&video_id={2}&protocols={3}&client_token={4}'.format(server_token, config['racoon']['access_id'], video_id, formatsDRM, client_token), critical=True))
+    
+    if not data['protected']:
+        if kodiutils.get_setting_as_int('non_drm_format') == 0:
+            data['protocol'] = 'mpd'
+            try:
+                data['video_url'] = urls_request['urls']['dash']['clear']['url']
+            except:
+                return None
+        elif kodiutils.get_setting_as_int('non_drm_format') == 3:
+            data['protocol'] = 'mp4'
+            try:
+                data['video_url'] = urls_request['urls']['progressive']['clear']['url']
+            except:
+                return None
+        else:
+            data['protocol'] = 'hls'
+            try:
+                data['video_url'] = urls_request['urls']['hls']['clear']['url']
+            except:
+                return None
+    else:
+        if kodiutils.get_setting('drm') == '0':
+            data['protocol'] = 'mpd'
+            drm_name = 'widevine'
+            try:
+                data['video_url'] = urls_request['urls']['dash']['widevine']['url']
+                data['license_url'] = urls_request['urls']['dash']['widevine']['drm']['licenseAcquisitionUrl']
+                data['license_token'] = urls_request['urls']['dash']['widevine']['drm']['token']
+            except:
+                return None
+            data['drm'] = 'com.widevine.alpha'
+        elif kodiutils.get_setting('drm') == '1':
+            data['protocol'] = 'mpd'
+            drm_name = 'playready'
+            try:
+                data['video_url'] = urls_request['urls']['dash']['playready']['url']
+                data['license_url'] = urls_request['urls']['dash']['playready']['drm']['licenseAcquisitionUrl']
+                data['license_token'] = urls_request['urls']['dash']['playready']['drm']['token']
+            except:
+                return None
+            data['drm'] = 'com.microsoft.playready'
+        else:
+            data['protocol'] = 'ism'
+            drm_name = 'playready'
+            try:
+                data['video_url'] = urls_request['urls']['hss']['playready']['url']
+                data['license_url'] = urls_request['urls']['hss']['playready']['drm']['licenseAcquisitionUrl']
+                data['license_token'] = urls_request['urls']['hss']['playready']['drm']['token']
+            except:
+                return None
+            data['drm'] = 'com.microsoft.playready'
+    return data
 
 def utc_to_local(dt):
     if time.localtime().tm_isdst: return dt - timedelta(seconds=time.altzone)

@@ -58,3 +58,7 @@ v1.3.2:
   - choose between DASH and SmoothStreaming. SmoothStreaming should give better quality, but doesn't work currently.
 v1.3.3:
 - fix start/availability dates if there were multiple air dates
+v1.3.4:
+- add option to always use the puls4 request key on vod content. as of release of this version this results in higher resolution videos
+- add option to request videos like the player on the prosiebenmaxx website, this is slower, but sometimes gives higher resolution videos
+

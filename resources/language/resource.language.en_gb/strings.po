@@ -242,3 +242,11 @@ msgstr ""
 msgctxt "#32116"
 msgid "PLAYREADY with SmoothStreaming (Android only)"
 msgstr ""
+
+msgctxt "#32117"
+msgid "request video like the website instead of the app(slower)"
+msgstr ""
+
+msgctxt "#32118"
+msgid "always use the puls4 key for VOD(sometimes better quality)"
+msgstr ""
