@@ -7,7 +7,7 @@ import xbmcvfs
 import logging
 logger = logging.getLogger(xbmcaddon.Addon().getAddonInfo(u'id'))
 
-__profile__ = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo(u'profile'))
+__profile__ = xbmcvfs.translatePath(xbmcaddon.Addon().getAddonInfo(u'profile'))
 
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)

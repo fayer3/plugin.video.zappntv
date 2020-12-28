@@ -27,19 +27,12 @@ try:
 except ImportError:
     inputstream = False
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import BytesIO as StringIO
+from io import BytesIO
 
-try:
-    from urllib.request import Request, urlopen
-    from urllib.error import HTTPError, URLError
-    from urllib.parse import quote, unquote, urlparse, parse_qs, urlencode
-except ImportError:
-    from urllib import quote, unquote, urlencode
-    from urllib2 import Request, urlopen, HTTPError, URLError
-    from urlparse import urlparse, parse_qs
+
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, unquote, urlparse, parse_qs, urlencode
 
 try:
     from multiprocessing.pool import ThreadPool
@@ -61,7 +54,7 @@ logger = logging.getLogger(ADDON.getAddonInfo('id'))
 kodilogging.config()
 plugin = routing.Plugin()
 
-__profile__ = xbmc.translatePath(ADDON.getAddonInfo('profile'))
+__profile__ = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
 
 if not xbmcvfs.exists(__profile__):
     xbmcvfs.mkdirs(__profile__)
@@ -411,7 +404,7 @@ def show_mediathek_genre():
                     if 'data' in ui and ui['data'] != None and 'source' in ui['data'] and ui['data']['source'] != None:
                         query_source = get_query(ui['data']['source'])
                         if 'url' in query_source:
-                            query = get_query(base64.b64decode(query_source['url'][0]).decode('WINDOWS-1252').encode('UTF-8'))
+                            query = get_query(base64.b64decode(query_source['url'][0]).decode('WINDOWS-1252'))
                             if not 'genres' in query:
                                 continue
                             if 'type' in query:
@@ -433,7 +426,7 @@ def show_mediathek_channel():
                     if 'data' in ui and ui['data'] != None and 'source' in ui['data'] and ui['data']['source'] != None:
                         query_source = get_query(ui['data']['source'])
                         if 'url' in query_source:
-                            query = get_query(base64.b64decode(query_source['url'][0]).decode('WINDOWS-1252').encode('UTF-8'))
+                            query = get_query(base64.b64decode(query_source['url'][0]).decode('WINDOWS-1252'))
                             if not 'channelId' in query:
                                 continue
                             icon = get_channel_icon(query['channelId'][0])
@@ -511,7 +504,7 @@ def add_tvshows(add_query, sub_page = '', show_channel = False, limit = ids.api_
             listitem.setArt({'icon': icon, 'thumb': thumb, 'poster': poster, 'fanart' : fanart})
             
             plot = ''
-            log(tvshow['titles']['default'])
+            #log(tvshow['titles']['default'])
             html = html2text.HTML2Text()
             html.body_width  = 0
             if 'descriptions' in tvshow and tvshow['descriptions']['default'] and tvshow['descriptions']['default'] != None:
@@ -608,8 +601,8 @@ def show_tvshow_videos(id, category_query):
                 else:
                     cast.append(person['name'])
                     
-            log(cast)
-            log(director)
+            #log(cast)
+            #log(director)
             if 'visibilities' in video and video['visibilities'] != None and len(video['visibilities']) > 0:
                 start = None
                 end = None
@@ -670,7 +663,7 @@ def show_tvshow_videos(id, category_query):
             if season != -1 or episode != -1:
                 video['mediatype'] = 'episode'
             
-            log('Title: '+video['titles']['default'])
+            #log('Title: '+video['titles']['default'])
             listitem = ListItem(video['titles']['default'])
             
             if len(video['images']) > 0:
@@ -745,7 +738,7 @@ def play_livestream(livestream_id):
             setResolvedUrl(plugin.handle, False, ListItem(label='none'))
         else:
             playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=urls['urls']['dash'][drm_name]['url']+'|User-Agent=' + ids.user_agent_live)
-            playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
+            playitem.setProperty('inputstream', is_helper.inputstream_addon)
             playitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
             playitem.setProperty('inputstream.adaptive.license_type', drm)
             playitem.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
@@ -843,7 +836,7 @@ def play_video(video_id, channel='', disable_old_format=False):
                 setResolvedUrl(plugin.handle, False, ListItem(label='none'))
             else:
                 playitem = ListItem(label=xbmc.getInfoLabel('Container.ShowTitle'), path=data['video_url']+'|User-Agent=' + ids.user_agent_video)
-                playitem.setProperty('inputstreamaddon', is_helper.inputstream_addon)
+                playitem.setProperty('inputstream', is_helper.inputstream_addon)
                 playitem.setProperty('inputstream.adaptive.manifest_type', data['protocol'])
                 if data['protected']:
                     log('license url: {0}?token={1}'.format(data['license_url'], data['license_token']))
@@ -1185,7 +1178,7 @@ def get_url(url, headers={}, cache=False, critical=False):
 
     if request.info().get('Content-Encoding') == 'gzip':
         # decompress content
-        buffer = StringIO(request.read())
+        buffer = BytesIO(request.read())
         deflatedContent = gzip.GzipFile(fileobj=buffer)
         data = deflatedContent.read().decode('utf-8')
     else:

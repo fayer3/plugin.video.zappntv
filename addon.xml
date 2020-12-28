@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zappntv" name="Zappn TV" version="1.3.4" provider-name="fayer3">
+<addon id="plugin.video.zappntv" name="Zappn TV" version="1.3.4+matrix.1" provider-name="fayer3">
     <requires>
-        <import addon="xbmc.python" version="2.25.0"/>
-        <import addon="script.module.routing" version="0.2.0"/>
-        <import addon="script.module.inputstreamhelper" version="0.3.5"/>
-        <import addon="script.module.pytz" version="2014.2"/>
-        <import addon="script.module.tzlocal" version="2.0.0"/>
-        <import addon="script.module.html2text" version="2015.6.21"/>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.routing" version="0.2.3+matrix.1"/>
+        <import addon="script.module.inputstreamhelper" version="0.5.2+matrix.1"/>
+        <import addon="script.module.pytz" version="2019.3.0+matrix.1"/>
+        <import addon="script.module.tzlocal" version="2.0.0+matrix.1"/>
+        <import addon="script.module.html2text" version="2020.1.16+matrix.1"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
