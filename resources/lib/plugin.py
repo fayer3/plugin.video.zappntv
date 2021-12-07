@@ -151,17 +151,21 @@ def show_category(category_id):
             channels = json.loads(result)
             streams = []
             if multiprocess:
-                threads = []
-                pool = ThreadPool(processes=len(channels['response']['data']))
-                for brand in channels['response']['data']:
-                        thread = pool.apply_async(get_livestream, (brand['channelId'], brand['title'], brand['id']))
-                        thread.name = brand['channelId']
-                        thread.daemon = True
-                        threads.append(thread)
-                for thread in threads:
-                    streams.append(thread.get())
-                    pool.close()
-                    pool.join()
+                try:
+                    threads = []
+                    pool = ThreadPool(processes=len(channels['response']['data']))
+                    for brand in channels['response']['data']:
+                            thread = pool.apply_async(get_livestream, (brand['channelId'], brand['title'], brand['id']))
+                            thread.name = brand['channelId']
+                            thread.daemon = True
+                            threads.append(thread)
+                    for thread in threads:
+                        streams.append(thread.get())
+                        pool.close()
+                        pool.join()
+                except ImportError as e:
+                    for brand in channels['response']['data']:
+                        streams.append(get_livestream(brand['channelId'], brand['title'], brand['id']))
             else:
                 for brand in channels['response']['data']:
                     streams.append(get_livestream(brand['channelId'], brand['title'], brand['id']))

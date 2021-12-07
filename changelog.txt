@@ -61,4 +61,6 @@ v1.3.3:
 v1.3.4:
 - add option to always use the puls4 request key on vod content. as of release of this version this results in higher resolution videos
 - add option to request videos like the player on the prosiebenmaxx website, this is slower, but sometimes gives higher resolution videos
+v1.3.5:
+- fix error with kodi 19.3 on android, opening the live section
 
